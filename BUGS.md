@@ -158,29 +158,20 @@ Pipeline промокодов реализован корректно полно
 ### C-4. Удалено: `server/replit_integrations/` (audio, batch, chat, image)
 - Папка с Replit-специфичными интеграциями (audio/chat/image/batch). Не импортировалась из основного кода. Удалён 2026-05-03.
 
-### C-5. `@tldraw/tldraw` установлен, но не используется
-- **Где:** `package.json` deps. Импортов в `client/src/` нет (доска работает на Excalidraw).
-- **Что делать:** `npm uninstall @tldraw/tldraw`. Минус ~5 МБ deps.
+### ✅ C-5. `@tldraw/tldraw` — УДАЛЁН 2026-05-03 (c5e3600)
+- Установлен, но не использовался (доска работает на Excalidraw). Удалён через `npm uninstall`.
 
-### C-6. Replit Vite-плагины активны
-- **Где:** `vite.config.ts:5,17,20` + `package.json:114-116`.
-  - `@replit/vite-plugin-runtime-error-modal` импортируется безусловно.
-  - `cartographer` и `dev-banner` подключаются по `process.env.REPL_ID`.
-- **Проблема:** после полного переезда на Beget — мёртвая зависимость.
-- **Что делать:** убрать после успешного запуска на Beget и валидации dev-сервера.
+### ✅ C-6. Replit Vite-плагины — УДАЛЕНЫ 2026-05-03 (c5e3600)
+- `@replit/vite-plugin-runtime-error-modal`, `cartographer`, `dev-banner` убраны из `vite.config.ts` и `package.json`. Мёртвые зависимости после переезда на Beget.
 
-### C-7. Drizzle-зависимости частично используются
-- **Где:** `shared/schema.ts` использует `drizzle-orm`, `drizzle-zod` для генерации типов — **оставить**.
-- **Удалить можно:** `drizzle-kit` (только для `db:push`, не используется), `pg` (только в удалённом `db.ts`), `connect-pg-simple` (не используется — сессии через Supabase), `memorystore` (не используется).
-- **Что делать:** отдельный коммит «remove unused pg-stack» с прогоном `npm run build` + `npm test`.
+### ✅ C-7. unused pg-stack — УДАЛЁН 2026-05-03 (c5e3600)
+- `drizzle-kit`, `pg`, `connect-pg-simple`, `memorystore`, `@types/connect-pg-simple` удалены. `drizzle-orm` и `drizzle-zod` ОСТАВЛЕНЫ — нужны для типов в `shared/schema.ts`.
 
-### C-8. `replit.md` и `.replit` / `.replitignore` в репо
-- **Проблема:** legacy от Replit. После переезда — устаревшая документация.
-- **Что делать:** перенести полезное в `README.md`, удалить.
+### ✅ C-8. `.replit`, `.replitignore`, `replit.md` — УДАЛЕНЫ 2026-05-03 (1e0c1cd)
+- Legacy-файлы Replit-окружения. Полезная информация уже была в `CLAUDE.md` и `BUGS.md`.
 
-### C-9. `n8n-telegram-bot-workflow.json` (18 КБ) в корне — артефакт прошлого
-- **Уточнено владельцем 2026-05-03:** есть отдельный сервер с n8n, но в этом проекте не используется. Файл — артефакт прошлого.
-- **Что делать:** не приоритет. Перенести в `scripts/n8n/` или удалить при следующей чистке репо.
+### ✅ C-9. `n8n-telegram-bot-workflow.json` — УДАЛЁН 2026-05-03 (d5a4d9b)
+- Артефакт прошлого. n8n работает на отдельном сервере, в этом проекте не используется. При необходимости восстанавливается из git-истории.
 
 ### C-10. Нет TODO/FIXME-комментариев в коде
 - **Наблюдение:** `grep -E "(TODO|FIXME|HACK|XXX)"` ничего не нашёл по `server/`, `client/src/`, `shared/`.
