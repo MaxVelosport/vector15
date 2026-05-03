@@ -119,14 +119,21 @@
 - **Проблема:** при отказе на этапе записи в `processed_webhook_events` (race, partial commit) можно зачислить дважды. Текущая реализация защищает большинство сценариев, но не 100%.
 - **Что делать:** алерт в Telegram при появлении дубля (если PRIMARY KEY conflict случается часто — это сигнал).
 
-### W-12. Excalidraw `collaborators` prop удалён в 0.18 — синхронизация коллабораторов на доске может не работать
-- **Где:** `client/src/pages/board.tsx:910` (после фикса типа в W-10a — обёрнут в `as any`).
-- **Проблема:** `<Excalidraw collaborators={...}>` больше не валидный prop в @excalidraw/excalidraw 0.18. Реактовое state `collaborators` обновляется (через WS-сообщения), но Excalidraw его игнорирует.
-- **Симптомы (если воспроизведутся):** на доске не видно курсоры других пользователей, аватары коллабораторов не отображаются.
-- **Что делать:**
-  1. Зайти на доску из двух разных браузеров (или вкладки + инкогнито) под разными аккаунтами.
-  2. Если курсоры/аватары не видны — найти новый API в Excalidraw 0.18 (вероятно, `excalidrawAPI.updateScene({ collaborators: ... })` через `apiRef.current`).
-  3. Перенести логику обновления коллабораторов в обработчик WS-сообщений, использовать API-метод вместо prop.
+### ✅ W-12. Excalidraw collaborators — ЗАКРЫТО 2026-05-03
+
+Realtime-коллаборация на доске восстановлена. Исправлены 6 связанных подбагов:
+
+1. **`collaborators` prop не существует в `ExcalidrawProps` 0.18** — заменён на `excalidrawAPI.updateScene({ collaborators })` через `SceneData`.
+2. **Все курсоры под одним ключом `"remote"`** — заменён на `socketId` per connection; сервер (`board-ws.ts`) генерирует `randomUUID()` при каждом подключении.
+3. **Репетитор слал `name: student?.name` (чужое имя)** — исправлено на `useAuth().user?.name`.
+4. **Ученик не отправлял свой курсор вообще** — добавлен `onPointerUpdate` в `student/board.tsx`.
+5. **Сервер не включал `socketId` в cursor-broadcast** — добавлен `socketId`, `role`, `color` из `ROLE_COLORS`.
+6. **Цвет курсора был hardcoded indigo** — заменён на палитру по роли: tutor=синий (`#3B82F6`), student=зелёный (`#10B981`).
+
+**Тестов на этот pipeline нет.** Добавить в Этап 3 ROADMAP (тесты-каркас):
+- cursor-broadcast: сервер корректно добавляет `socketId`/`color` в relay
+- cursor_leave: удаление по `socketId`, не по `role`
+- multi-user: два клиента видят курсоры друг друга (интеграционный тест с двумя WS-соединениями)
 
 ### ✅ W-13. `promoCode` в покупке AI-пакета — ЗАКРЫТО 2026-05-03: ЛОЖНЫЙ БАГ
 
