@@ -5,7 +5,7 @@
 
 ---
 
-## Этап 1. Production-deploy на Beget ✅ (в основном)
+## Этап 1. Production-deploy на Beget ✅
 
 **Цель:** перенести `tvoyvector.ru` с Replit на Beget VPS Казахстан без потери данных и downtime > 30 сек.
 
@@ -24,12 +24,12 @@
 - ✅ nginx с HTTPS работает.
 - ✅ PM2: `tvoyvector` online в `pm2 list`, fork mode.
 - ✅ Переключение DNS: домен резолвится на Beget (HTTPS отвечает с него).
-- ⏳ **Зафиксировать реальный nginx-конфиг в репо.** Текущий `nginx.tvoyvector.conf` в репо — только :80 без SSL, а на сервере явно другой (с certbot-блоками 443). Скопировать `/etc/nginx/sites-enabled/tvoyvector*` в репо, чтобы не потерять при пересборке.
-- ⏳ Проверить: `pm2 save` сделан и `pm2 startup` (systemd) настроен — иначе после ребута сервера PM2 не поднимется.
-- ⏳ Проверить cron-обновление certbot: `systemctl list-timers | grep certbot`.
-- ⏳ Логи: установить `pm2-logrotate` (`pm2 install pm2-logrotate`) — иначе `./logs/pm2-out.log` разрастётся бесконечно.
-- ⏳ Backup-скрипт: ежедневный `pg_dump` Supabase в директорию вне сервера (S3/Backblaze).
-- ⏳ 24-часовое наблюдение завершилось (если уже > 7 дней работает — закрыто).
+- ✅ **nginx-конфиг зафиксирован в репо** (`nginx.tvoyvector.conf`): скопирован реальный prod-конфиг с SSL-блоком certbot и :80→https редиректом.
+- ✅ **pm2 startup (systemd)** настроен: `pm2-deploy.service` enabled, `pm2 save` выполнен — при ребуте сервера `tvoyvector` поднимется автоматически.
+- ✅ **certbot cron** активен: `certbot.timer` работает, последний запуск 7 ч назад, следующий автоматически.
+- ✅ **pm2-logrotate** установлен и настроен: `max_size=10M`, `retain=7`, `compress=true`.
+- ✅ **Бэкапы**: Supabase managed (БД) + Яндекс.Диск (файловая система). Дополнительный `pg_dump` не требуется (см. BUGS.md → CR-6).
+- ✅ 24-часовое наблюдение завершилось (uptime 7+ дней).
 
 ### Подводные камни
 - ✅ Сессии/пользователи: миграция выполнена (HTTPS отвечает с Beget).
@@ -138,3 +138,4 @@
 - **2026-05-03** — создан roadmap. Удалён мёртвый код (`seed.ts`, `seed-demo.ts`, `db.ts`, `index.ts.patch`, `replit_integrations/`).
 - **2026-05-03** — аудит prod-состояния: Beget уже работает (PM2 + dist/index.cjs + HTTPS, uptime 7 дней). Этап 1 закрыт по сути, остались только страховочные пункты (зафиксировать nginx-конфиг, pm2 startup, бэкапы, logrotate).
 - **2026-05-03** — исправлены все 18 type-errors из W-10a (BUGS.md), `npm run check` зелёный. Свежий `npm run build` + smoke-старт на :3001 прошли без ошибок. Найдены 2 потенциальных бага (Excalidraw collaborators, promoCode в AI-purchase) — задокументированы в BUGS.md → W-10a.
+- **2026-05-03** — закрыты все страховочные пункты Этапа 1: pm2 startup (systemd unit `pm2-deploy.service`), pm2-logrotate (10M/7/gzip), nginx-конфиг с SSL зафиксирован в репо, certbot.timer подтверждён активным, бэкапы подтверждены (Supabase managed + Яндекс.Диск). Этап 1 полностью закрыт.
