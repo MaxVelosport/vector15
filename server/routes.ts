@@ -19,7 +19,7 @@ const voiceUpload = multer({
 import { setupBoardWebSocket, generateBoardWsToken } from "./board-ws";
 import { generateCalendarToken, verifyCalendarToken, buildICalendar } from "./calendar-ics";
 import { generateParentChatToken, verifyParentChatToken } from "./hmac-tokens";
-import { publicLimiter } from "./rate-limit";
+import { publicLimiter, healthLimiter } from "./rate-limit";
 
 // Per-tutor async mutex to serialize student-count-sensitive operations
 const _tutorLocks = new Map<string, Promise<void>>();
@@ -113,6 +113,20 @@ export async function registerRoutes(
 ): Promise<Server> {
 
   setupBoardWebSocket(httpServer);
+
+  // GET /api/health — публичный health-check для UptimeRobot
+  app.get("/api/health", healthLimiter, async (_req, res) => {
+    try {
+      const { supabase } = await import("./supabase");
+      const { error } = await supabase
+        .from("Tvoy_vector_2_sessions")
+        .select("sid", { count: "exact", head: true });
+      if (error) throw new Error(error.message);
+      res.json({ status: "ok", supabase: "connected", timestamp: new Date().toISOString() });
+    } catch {
+      res.status(500).json({ status: "error", supabase: "unreachable" });
+    }
+  });
 
   // ======= AUTH ROUTES =======
   
@@ -1014,7 +1028,7 @@ export async function registerRoutes(
   // POST /api/public/tutor/:slug/apply — заявка ученика на занятия
   app.post("/api/public/tutor/:slug/apply", publicLimiter, async (req, res) => {
     try {
-      const tutor = await storage.getTutorBySlug(req.params.slug);
+      const tutor = await storage.getTutorBySlug(String(req.params.slug));
       if (!tutor || !tutor.isPublicProfile || tutor.isBlocked) {
         return res.status(404).json({ error: "Репетитор не найден" });
       }
@@ -2094,7 +2108,7 @@ A: Кнопка ⇄ рядом с занятием → выбрать новое
       const tutorId = req.session.tutorId!;
 
       // Применить промокод (если задан) — пересчитываем итоговую сумму
-      let finalPrice = validOption.price;
+      let finalPrice: number = validOption.price;
       let appliedPromoId: string | null = null;
       if (promoCode && promoCode.trim()) {
         const promo = await storage.getPromoCodeByCode(promoCode.trim());

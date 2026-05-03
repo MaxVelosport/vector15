@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, invalidateResource } from "@/lib/queryClient";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { PageHero } from "@/components/page-hero";
 import { Button } from "@/components/ui/button";

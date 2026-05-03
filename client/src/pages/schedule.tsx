@@ -368,7 +368,7 @@ export default function SchedulePage() {
     const [h, m] = editPanelRescheduleTime.split(":").map(Number);
     const newDate = new Date(editPanelRescheduleDate + "T00:00:00");
     newDate.setHours(h, m, 0, 0);
-    updateLesson.mutate({ id: lessonId, updates: { scheduledAt: newDate.toISOString() } }, {
+    updateLesson.mutate({ id: lessonId, updates: { scheduledAt: newDate } }, {
       onSuccess: () => { toast.success("Перенесено"); setEditingLessonId(null); },
       onError: () => toast.error("Ошибка"),
     });

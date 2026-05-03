@@ -338,7 +338,7 @@ function TutorTelegramManagerButton() {
   );
 }
 
-type TabValue = "home" | "students" | "schedule" | "homework" | "quizzes" | "finance" | "chat" | "tasks" | "ai" | "lesson-plan" | "referrals" | "profile";
+type TabValue = "home" | "students" | "schedule" | "homework" | "quizzes" | "recordings" | "finance" | "chat" | "tasks" | "ai" | "lesson-plan" | "referrals" | "profile";
 
 const navItems: { value: TabValue; label: string; icon: React.ElementType; path: string; hint: string }[] = [
   { value: "home", label: "Главная", icon: LayoutGrid, path: "/", hint: "Обзор и быстрый доступ" },

@@ -309,8 +309,8 @@ export default function BoardPage() {
 
   const apiRef     = useRef<any>(null);           // ExcalidrawImperativeAPI
   const wsRef      = useRef<WebSocket | null>(null);
-  const debRef     = useRef<ReturnType<typeof setTimeout>>();
-  const curDeb     = useRef<ReturnType<typeof setTimeout>>();
+  const debRef     = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const curDeb     = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const suppressRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -902,12 +902,14 @@ export default function BoardPage() {
         {/* Холст */}
         <div className="flex-1 relative min-w-0">
           <Excalidraw
-            excalidrawAPI={(api: any) => { apiRef.current = api; }}
-            onChange={handleChange}
-            onPointerUpdate={handlePointerUpdate}
-            theme={theme === "dark" ? "dark" : "light"}
-            langCode="ru-RU"
-            collaborators={collaborators as any}
+            {...({
+              excalidrawAPI: (api: any) => { apiRef.current = api; },
+              onChange: handleChange,
+              onPointerUpdate: handlePointerUpdate,
+              theme: theme === "dark" ? "dark" : "light",
+              langCode: "ru-RU",
+              collaborators,
+            } as any)}
             initialData={{ elements: [], appState: { viewBackgroundColor: theme === "dark" ? "#1a1a2e" : "#ffffff" } }}
             UIOptions={{
               canvasActions: {

@@ -7,8 +7,8 @@ checkEnvironment();
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import multer from "multer";
-import path from "path";
 import { randomUUID } from "crypto";
+import { supabase } from "./supabase";
 import { registerRoutes } from "./routes";
 import { registerStudentRoutes } from "./student-routes";
 import { serveStatic } from "./static";
@@ -77,7 +77,7 @@ app.use(
     cookie: {
       maxAge: 365 * 24 * 60 * 60 * 1000,
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: "auto",
       sameSite: "lax",
     },
   }),
@@ -237,21 +237,12 @@ app.use((req, res, next) => {
   next();
 });
 
-const uploadStorage = multer.diskStorage({
-  destination: path.resolve("uploads"),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname) || ".jpg";
-    cb(null, `${randomUUID()}${ext}`);
-  },
-});
 const upload = multer({
-  storage: uploadStorage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 20 * 1024 * 1024 },
 });
 
-app.use("/uploads", express.static(path.resolve("uploads"), { maxAge: "7d" }));
-
-app.post("/api/upload", upload.array("files", 10), (req, res) => {
+app.post("/api/upload", upload.array("files", 10), async (req, res) => {
   if (!req.session.tutorId && !req.session.studentId) {
     return res.status(401).json({ error: "Требуется авторизация" });
   }
@@ -259,8 +250,24 @@ app.post("/api/upload", upload.array("files", 10), (req, res) => {
   if (!files || files.length === 0) {
     return res.status(400).json({ error: "Нет файлов" });
   }
-  const urls = files.map((f) => `/uploads/${f.filename}`);
-  res.json({ urls });
+  try {
+    const urls: string[] = [];
+    for (const file of files) {
+      const ext = file.originalname.includes(".")
+        ? file.originalname.split(".").pop()!.toLowerCase()
+        : "bin";
+      const filename = `${randomUUID()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("uploads")
+        .upload(filename, file.buffer, { contentType: file.mimetype, upsert: false });
+      if (error) throw new Error(error.message);
+      const { data } = supabase.storage.from("uploads").getPublicUrl(filename);
+      urls.push(data.publicUrl);
+    }
+    res.json({ urls });
+  } catch (e: any) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 (async () => {

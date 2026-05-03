@@ -31,7 +31,7 @@ const TOKEN_TTL_MS = 45_000; // 45 seconds
 
 setInterval(() => {
   const now = Date.now();
-  for (const [tok, data] of pendingTokens) {
+  for (const [tok, data] of Array.from(pendingTokens.entries())) {
     if (data.expires < now) pendingTokens.delete(tok);
   }
 }, 60_000);

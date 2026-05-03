@@ -1152,11 +1152,11 @@ export function registerStudentRoutes(app: Express) {
   app.delete("/api/student/messages/:messageId", requireStudentAuth, async (req, res) => {
     try {
       const studentId = req.session.studentId!;
-      const msg = await storage.getDirectMessageById(req.params.messageId);
+      const msg = await storage.getDirectMessageById(req.params.messageId as string);
       if (!msg) return res.status(404).json({ error: "Сообщение не найдено" });
       if (msg.studentId !== studentId) return res.status(403).json({ error: "Нет доступа" });
       if (msg.role !== 'student') return res.status(403).json({ error: "Можно удалять только свои сообщения" });
-      await storage.deleteDirectMessage(req.params.messageId);
+      await storage.deleteDirectMessage(req.params.messageId as string);
       res.json({ ok: true });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
@@ -1559,7 +1559,7 @@ export function registerStudentRoutes(app: Express) {
   app.get("/api/student/variants/:id", requireStudentAuth, async (req, res) => {
     try {
       const studentId = req.session.studentId!;
-      const assignment = await storage.getStudentVariantById(req.params.id, studentId);
+      const assignment = await storage.getStudentVariantById(req.params.id as string, studentId);
       if (!assignment) return res.status(404).json({ error: "Вариант не найден" });
       const variant = assignment.variant;
       const tasks = await Promise.all((variant?.taskIds || []).map((tid: string) => storage.getTaskById(tid)));
@@ -1596,7 +1596,7 @@ export function registerStudentRoutes(app: Express) {
   // GET /api/student/tasks/:id - single task (with solution)
   app.get("/api/student/tasks/:id", requireStudentAuth, async (req, res) => {
     try {
-      const task = await storage.getTaskById(req.params.id);
+      const task = await storage.getTaskById(req.params.id as string);
       if (!task) return res.status(404).json({ error: "Задача не найдена" });
       res.json(task);
     } catch (e: any) {
@@ -1819,7 +1819,7 @@ export function registerStudentRoutes(app: Express) {
   app.get("/api/student/quizzes/:id", requireStudentAuth, async (req, res) => {
     try {
       const studentId = (req.session as any).studentId as string;
-      const quiz = await storage.getQuiz(req.params.id);
+      const quiz = await storage.getQuiz(req.params.id as string);
       if (!quiz) return res.status(404).json({ error: "Не найдено" });
       // Проверяем доступ: либо назначен этому ученику, либо общий шаблон того же репетитора
       const list = await storage.getQuizzesAvailableToStudent(studentId);
@@ -1833,7 +1833,7 @@ export function registerStudentRoutes(app: Express) {
   app.post("/api/student/quizzes/:id/submit", requireStudentAuth, async (req, res) => {
     try {
       const studentId = (req.session as any).studentId as string;
-      const quiz = await storage.getQuiz(req.params.id);
+      const quiz = await storage.getQuiz(req.params.id as string);
       if (!quiz) return res.status(404).json({ error: "Не найдено" });
       const list = await storage.getQuizzesAvailableToStudent(studentId);
       if (!list.some(q => q.id === quiz.id)) return res.status(403).json({ error: "Нет доступа" });
@@ -1886,7 +1886,7 @@ export function registerStudentRoutes(app: Express) {
   app.get("/api/student/recordings/:id", requireStudentAuth, async (req, res) => {
     try {
       const studentId = (req.session as any).studentId as string;
-      const r = await storage.getLessonRecording(req.params.id);
+      const r = await storage.getLessonRecording(req.params.id as string);
       if (!r || r.studentId !== studentId || r.status !== 'ready') return res.status(404).json({ error: "Не найдено" });
       res.json(r);
     } catch (e: any) { res.status(500).json({ error: e.message }); }

@@ -123,3 +123,14 @@ export const publicLimiter: RateLimitRequestHandler = rateLimit({
   handler: rateLimitHandler,
   message: "Слишком много запросов. Подождите минуту.",
 });
+
+// ─── 9. Health-check ─────────────────────────────────────────────────────────
+export const healthLimiter: RateLimitRequestHandler = rateLimit({
+  windowMs: 60 * 1000,
+  limit: isDev ? 10_000 : 30,
+  keyGenerator: makeKeyFromIp,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  handler: rateLimitHandler,
+  message: "Слишком много запросов к health-check.",
+});

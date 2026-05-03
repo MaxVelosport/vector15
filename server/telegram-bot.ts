@@ -1,7 +1,8 @@
 import TelegramBot from "node-telegram-bot-api";
 import OpenAI from "openai";
-import { createHash } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import { storage } from "./storage";
+import { supabase } from "./supabase";
 import type { Tutor, Student } from "@shared/schema";
 import { openaiKey, appUrl, BUILTIN_TELEGRAM_TOKEN } from "./builtin-config";
 
@@ -81,7 +82,7 @@ class PlatformBotManager {
     this.dataCache.set(key, { data, exp: Date.now() + PlatformBotManager.DATA_TTL });
   }
   private dcDel(...prefixes: string[]) {
-    for (const k of this.dataCache.keys())
+    for (const k of Array.from(this.dataCache.keys()))
       if (prefixes.some(p => k.startsWith(p))) this.dataCache.delete(k);
   }
 
@@ -4245,12 +4246,12 @@ class PlatformBotManager {
 
   /**
    * Скачивает любой файл из Telegram и сохраняет в /uploads/<uuid>.<ext>.
-   * Возвращает публичный относительный URL (тот же формат, что у /api/upload).
+   * Возвращает публичный URL из Supabase Storage.
    */
   private async downloadAndStoreTelegramFile(
     fileId: string,
     mimeType?: string,
-  ): Promise<{ url: string; localPath: string; mime: string; size: number } | null> {
+  ): Promise<{ url: string; mime: string; size: number } | null> {
     if (!this.bot) return null;
     try {
       const link = await this.bot.getFileLink(fileId);
@@ -4270,24 +4271,20 @@ class PlatformBotManager {
       else if (mt.includes("ms-excel") || mt.includes("officedocument.spreadsheet")) ext = "xlsx";
       else if (mt.includes("text/plain")) ext = "txt";
       else {
-        // Фоллбек по самой ссылке (Telegram отдаёт нормальный путь)
         const m = link.match(/\.([a-z0-9]{2,5})(?:\?|$)/i);
         if (m) ext = m[1].toLowerCase();
-        else ext = "jpg"; // фото без mime у Telegram
+        else ext = "jpg";
       }
 
-      const path = await import("path");
-      const fs = await import("fs/promises");
-      const { randomUUID } = await import("crypto");
-      const dir = path.resolve("uploads");
-      await fs.mkdir(dir, { recursive: true });
       const fname = `${randomUUID()}.${ext}`;
-      const fpath = path.join(dir, fname);
-      await fs.writeFile(fpath, buf);
+      const { error } = await supabase.storage
+        .from("uploads")
+        .upload(fname, buf, { contentType: mimeType || `application/${ext}`, upsert: false });
+      if (error) throw new Error(error.message);
+      const { data } = supabase.storage.from("uploads").getPublicUrl(fname);
 
       return {
-        url: `/uploads/${fname}`,
-        localPath: fpath,
+        url: data.publicUrl,
         mime: mimeType || `application/${ext}`,
         size: buf.length,
       };

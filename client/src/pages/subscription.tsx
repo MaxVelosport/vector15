@@ -88,7 +88,7 @@ export default function SubscriptionPage() {
   });
 
   const buyAiPackageMutation = useMutation({
-    mutationFn: async (data: { credits: number; pricePaid: number }) => {
+    mutationFn: async (data: { credits: number; pricePaid: number; promoCode?: string | null }) => {
       const r = await fetch("/api/ai-packages/purchase", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
