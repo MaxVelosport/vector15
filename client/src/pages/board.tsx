@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
+import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -300,22 +301,31 @@ const BOARD_TEMPLATES: BoardTemplate[] = [
   },
 ];
 
+type ExcalidrawCollaborator = {
+  pointer?: { x: number; y: number; tool: "pointer" };
+  button?: "up" | "down";
+  username?: string;
+  color?: { background: string; stroke: string };
+  socketId?: string;
+};
+
 // ── BoardPage ─────────────────────────────────────────────────────────────────
 export default function BoardPage() {
   const params   = useParams<{ studentId: string }>();
   const studentId = params.studentId;
   const [, setLocation] = useLocation();
   const { theme } = useTheme();
+  const { user } = useAuth();
 
-  const apiRef     = useRef<any>(null);           // ExcalidrawImperativeAPI
-  const wsRef      = useRef<WebSocket | null>(null);
-  const debRef     = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const curDeb     = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const suppressRef = useRef(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const apiRef           = useRef<any>(null);           // ExcalidrawImperativeAPI
+  const wsRef            = useRef<WebSocket | null>(null);
+  const debRef           = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const curDeb           = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const suppressRef      = useRef(false);
+  const fileInputRef     = useRef<HTMLInputElement>(null);
+  const collaboratorsRef = useRef<Map<string, ExcalidrawCollaborator>>(new Map());
 
   const [status,       setStatus]       = useState<SyncStatus>("connecting");
-  const [collaborators, setCollaborators] = useState<Map<string, any>>(new Map());
   const [showShapes,   setShowShapes]   = useState(false);
   const [showTemplates,setShowTemplates]= useState(false);
   const [showArchive,  setShowArchive]  = useState(false);
@@ -400,7 +410,8 @@ export default function BoardPage() {
       ws.onopen = () => setStatus("connected");
       ws.onclose = () => {
         setStatus("disconnected");
-        setCollaborators(new Map());
+        collaboratorsRef.current = new Map();
+        apiRef.current?.updateScene({ collaborators: new Map() });
         if (!destroyed) reconnectTimer = setTimeout(connect, 3000);
       };
       ws.onerror = () => setStatus("disconnected");
@@ -418,22 +429,21 @@ export default function BoardPage() {
               setTimeout(() => { suppressRef.current = false; }, 300);
             }
           } else if (msg.type === "cursor" && msg.x != null) {
-            const id = "remote";
-            setCollaborators(prev => {
-              const next = new Map(prev);
-              next.set(id, {
-                pointer: { x: msg.x, y: msg.y, tool: "pointer" },
-                button: "up",
-                selectedElementIds: {},
-                username: msg.name ?? "Ученик",
-                color: { background: "#4f46e5", stroke: "#4338ca" },
-                avatarUrl: undefined,
-                id,
-              });
-              return next;
+            const { socketId, x, y, name, color } = msg;
+            const nextMap = new Map(collaboratorsRef.current);
+            nextMap.set(socketId, {
+              pointer: { x, y, tool: "pointer" as const },
+              button: "up" as const,
+              username: name ?? "Участник",
+              color,
             });
+            collaboratorsRef.current = nextMap;
+            apiRef.current?.updateScene({ collaborators: nextMap });
           } else if (msg.type === "cursor_leave") {
-            setCollaborators(new Map());
+            const nextMap = new Map(collaboratorsRef.current);
+            nextMap.delete(msg.socketId);
+            collaboratorsRef.current = nextMap;
+            apiRef.current?.updateScene({ collaborators: nextMap });
           }
         } catch {}
       };
@@ -445,7 +455,8 @@ export default function BoardPage() {
       destroyed = true;
       if (reconnectTimer) clearTimeout(reconnectTimer);
       wsRef.current?.close();
-      setCollaborators(new Map());
+      collaboratorsRef.current = new Map();
+      apiRef.current?.updateScene({ collaborators: new Map() });
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentId]);
@@ -541,11 +552,11 @@ export default function BoardPage() {
           type: "cursor",
           x: payload.pointer.x,
           y: payload.pointer.y,
-          name: student?.name ?? "Репетитор",
+          name: user?.name ?? "Репетитор",
         }));
       }
     }, 40);
-  }, [student?.name]);
+  }, [user?.name]);
 
   const handleClearBoard = useCallback(() => {
     const api = apiRef.current;
@@ -902,14 +913,11 @@ export default function BoardPage() {
         {/* Холст */}
         <div className="flex-1 relative min-w-0">
           <Excalidraw
-            {...({
-              excalidrawAPI: (api: any) => { apiRef.current = api; },
-              onChange: handleChange,
-              onPointerUpdate: handlePointerUpdate,
-              theme: theme === "dark" ? "dark" : "light",
-              langCode: "ru-RU",
-              collaborators,
-            } as any)}
+            excalidrawAPI={(api: any) => { apiRef.current = api; }}
+            onChange={handleChange}
+            onPointerUpdate={handlePointerUpdate}
+            theme={theme === "dark" ? "dark" : "light"}
+            langCode="ru-RU"
             initialData={{ elements: [], appState: { viewBackgroundColor: theme === "dark" ? "#1a1a2e" : "#ffffff" } }}
             UIOptions={{
               canvasActions: {

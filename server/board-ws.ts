@@ -10,11 +10,17 @@ const rooms = new Map<string, Set<WebSocket>>();
 const roomLastEmpty = new Map<string, number>();
 const IDLE_CLEANUP_MS = 30 * 60 * 1000;
 
+const ROLE_COLORS = {
+  tutor:   { background: "#3B82F6", stroke: "#1E40AF" },
+  student: { background: "#10B981", stroke: "#047857" },
+};
+
 // Connection metadata
 interface ConnMeta {
   role: "tutor" | "student";
   userId: string;
   studentId: string;
+  socketId: string;
 }
 const connMeta = new WeakMap<WebSocket, ConnMeta>();
 
@@ -129,10 +135,12 @@ export function setupBoardWebSocket(server: Server) {
     }
 
     const roomId = tokenData.studentId;
+    const socketId = randomUUID();
     const meta: ConnMeta = {
       role: tokenData.role,
       userId: tokenData.userId,
       studentId: roomId,
+      socketId,
     };
     connMeta.set(ws, meta);
 
@@ -173,8 +181,15 @@ export function setupBoardWebSocket(server: Server) {
             }
           }
         } else if (msg.type === "cursor" && msg.x != null) {
-          // Relay cursor position with sender's role
-          const cursor = JSON.stringify({ type: "cursor", x: msg.x, y: msg.y, name: msg.name, role: meta.role });
+          const cursor = JSON.stringify({
+            type: "cursor",
+            x: msg.x,
+            y: msg.y,
+            name: msg.name,
+            socketId: meta.socketId,
+            role: meta.role,
+            color: ROLE_COLORS[meta.role],
+          });
           for (const client of Array.from(room)) {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
               client.send(cursor);
@@ -191,7 +206,7 @@ export function setupBoardWebSocket(server: Server) {
         roomLastEmpty.set(roomId, Date.now());
       }
       // Notify peers that user left
-      const leaveMsg = JSON.stringify({ type: "cursor_leave", role: meta.role });
+      const leaveMsg = JSON.stringify({ type: "cursor_leave", socketId: meta.socketId });
       for (const client of Array.from(room)) {
         if (client.readyState === WebSocket.OPEN) {
           client.send(leaveMsg);
