@@ -237,7 +237,7 @@ export default function StudentPortal() {
   if (location === "/student/board") {
     return (
       <div className="fixed inset-0 flex flex-col">
-        <StudentBoard studentId={student.id} />
+        <StudentBoard studentId={student.id} studentName={student.name} />
       </div>
     );
   }

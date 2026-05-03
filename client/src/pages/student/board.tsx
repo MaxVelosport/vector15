@@ -9,6 +9,13 @@ import { toast } from "sonner";
 
 type SyncStatus = "connecting" | "connected" | "disconnected";
 
+type ExcalidrawCollaborator = {
+  pointer?: { x: number; y: number; tool: "pointer" };
+  button?: "up" | "down";
+  username?: string;
+  color?: { background: string; stroke: string };
+  socketId?: string;
+};
 
 function mergeElements(local: any[], remote: any[]): any[] {
   const merged = new Map<string, any>();
@@ -38,19 +45,22 @@ const SHORTCUTS = [
 
 interface StudentBoardProps {
   studentId: string;
+  studentName: string;
 }
 
-export default function StudentBoard({ studentId }: StudentBoardProps) {
+export default function StudentBoard({ studentId, studentName }: StudentBoardProps) {
   const [, setLocation] = useLocation();
   const { theme } = useTheme();
 
-  const apiRef = useRef<any>(null);
-  const wsRef = useRef<WebSocket | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const apiRef           = useRef<any>(null);
+  const wsRef            = useRef<WebSocket | null>(null);
+  const debounceRef      = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const curDeb           = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const pendingSnapshotRef = useRef<any>(null);
-  const lastSentJsonRef = useRef<string>("");
-  const suppressSendRef = useRef(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const lastSentJsonRef  = useRef<string>("");
+  const suppressSendRef  = useRef(false);
+  const fileInputRef     = useRef<HTMLInputElement>(null);
+  const collaboratorsRef = useRef<Map<string, ExcalidrawCollaborator>>(new Map());
   const [status, setStatus] = useState<SyncStatus>("connecting");
   const [showHelp, setShowHelp] = useState(false);
 
@@ -105,6 +115,8 @@ export default function StudentBoard({ studentId }: StudentBoardProps) {
       ws.onopen = () => setStatus("connected");
       ws.onclose = () => {
         setStatus("disconnected");
+        collaboratorsRef.current = new Map();
+        apiRef.current?.updateScene({ collaborators: new Map() });
         if (!destroyed) reconnectTimer = setTimeout(connect, 3000);
       };
       ws.onerror = () => setStatus("disconnected");
@@ -119,6 +131,22 @@ export default function StudentBoard({ studentId }: StudentBoardProps) {
             } else {
               pendingSnapshotRef.current = remoteElements;
             }
+          } else if (msg.type === "cursor" && msg.x != null) {
+            const { socketId, x, y, name, color } = msg;
+            const nextMap = new Map(collaboratorsRef.current);
+            nextMap.set(socketId, {
+              pointer: { x, y, tool: "pointer" as const },
+              button: "up" as const,
+              username: name ?? "Участник",
+              color,
+            });
+            collaboratorsRef.current = nextMap;
+            apiRef.current?.updateScene({ collaborators: nextMap });
+          } else if (msg.type === "cursor_leave") {
+            const nextMap = new Map(collaboratorsRef.current);
+            nextMap.delete(msg.socketId);
+            collaboratorsRef.current = nextMap;
+            apiRef.current?.updateScene({ collaborators: nextMap });
           }
         } catch {}
       };
@@ -131,6 +159,8 @@ export default function StudentBoard({ studentId }: StudentBoardProps) {
       if (reconnectTimer) clearTimeout(reconnectTimer);
       clearTimeout(debounceRef.current);
       wsRef.current?.close();
+      collaboratorsRef.current = new Map();
+      apiRef.current?.updateScene({ collaborators: new Map() });
     };
   }, [studentId, applyRemote]);
 
@@ -155,6 +185,20 @@ export default function StudentBoard({ studentId }: StudentBoardProps) {
       wsRef.current.send(JSON.stringify({ type: "update", snapshot: { elements } }));
     }, 150);
   }, []);
+
+  const handlePointerUpdate = useCallback((payload: { pointer: { x: number; y: number } }) => {
+    if (curDeb.current) clearTimeout(curDeb.current);
+    curDeb.current = setTimeout(() => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({
+          type: "cursor",
+          x: payload.pointer.x,
+          y: payload.pointer.y,
+          name: studentName ?? "Ученик",
+        }));
+      }
+    }, 40);
+  }, [studentName]);
 
   const handleExportPNG = useCallback(async () => {
     const api = apiRef.current;
@@ -298,6 +342,7 @@ export default function StudentBoard({ studentId }: StudentBoardProps) {
         <Excalidraw
           excalidrawAPI={handleMount}
           onChange={handleChange}
+          onPointerUpdate={handlePointerUpdate}
           theme={theme === "dark" ? "dark" : "light"}
           langCode="ru-RU"
           initialData={{ appState: { viewBackgroundColor: theme === "dark" ? "#1a1b1e" : "#f8f9fb" } }}
