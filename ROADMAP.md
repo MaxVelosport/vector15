@@ -52,8 +52,8 @@
 
 ### Observability
 - ✅ Error tracking: GlitchTip self-hosted (`errors.tvoyvector.ru`) + `@sentry/node@8` / `@sentry/react@8` — backend и frontend ошибки приходят в GlitchTip.
-- ⏳ Базовый health-check мониторинг (UptimeRobot / Healthchecks.io на `/api/health`).
-- ⏳ Алерты в Telegram при 5xx, при дубль-вебхуке ЮKassa, при недоступности Supabase.
+- ✅ Базовый health-check мониторинг (UptimeRobot — настроен ранее на `/api/health`).
+- ✅ Telegram-алерты для critical-событий — модуль `server/admin-alerts.ts`. Источники: HTTP 5xx через Express middleware, `uncaughtException`/`unhandledRejection` через `process.on`, дубль-webhook ЮKassa в `/api/payments/webhook`. Отправка через существующего Telegram-бота (`botManager.sendToChatId`) на `TELEGRAM_ADMIN_CHAT_ID`. Markdown-форматирование, обрезка по лимиту, никогда не throw. Алерты со звуком.
 - ⏳ Структурное логирование: заменить `console.log` на pino/winston с JSON-форматом (для парсинга).
 
 ### DB-целостность
@@ -143,3 +143,4 @@
 - **2026-05-03 (вечер)** — W-12 закрыт целиком. Realtime-коллаборация на доске Excalidraw восстановлена: 6 связанных багов исправлены (prop удалён в 0.18 — теперь `updateScene`; все курсоры под одним ключом — теперь `socketId` per connection; репетитор слал чужое имя — теперь `useAuth`; ученик не слал курсор вообще — добавлен `onPointerUpdate`; сервер не шлёт `socketId` в broadcast — теперь шлёт; цвета по роли через `ROLE_COLORS`). Smoke-test прошёл. Этап раннего тестирования ROADMAP можно начинать с этой фичей.
 - **2026-05-03 (вечер)** — Часть А Этапа 2 закрыта: удалены файлы Replit-окружения (1e0c1cd), 8 неиспользуемых dependencies (c5e3600), n8n workflow (d5a4d9b). Bundle и репозиторий чище, build всё ещё 59 сек.
 - **2026-05-04** — установлен GlitchTip (self-hosted, Sentry-совместимый) на `errors.tvoyvector.ru` через Docker Compose. Интегрированы `@sentry/node@8` и `@sentry/react@8` в backend и frontend vector15. `@sentry/node@10` оказался несовместим с GlitchTip 6.x (события дропались до транспорта из-за OTel-инструментации). Тестовые события подтверждены — error tracking работает. Часть Б Этапа 2 — error tracking готово, остальные пункты Observability (UptimeRobot, Telegram-алерты, структурное логирование) опциональны и не блокируют дальнейшую работу.
+- **2026-05-04 (продолжение)** — Telegram-алерты готовы. Модуль `server/admin-alerts.ts` с функцией `sendAdminAlert(level, title, context)`. Подключено к 3 источникам critical: HTTP 5xx (Express middleware), `uncaughtException`/`unhandledRejection` (process handlers), дубль ЮKassa webhook. Использует существующий `botManager.sendToChatId` через новый публичный метод. Тестовый алерт подтверждён получен в Telegram.

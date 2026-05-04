@@ -1,5 +1,22 @@
 import "./instrument";
 import * as Sentry from "@sentry/node";
+import { sendAdminAlert } from "./admin-alerts";
+
+process.on('uncaughtException', (err) => {
+  console.error('[uncaughtException]', err);
+  sendAdminAlert('critical', 'UNCAUGHT EXCEPTION', {
+    errorMessage: err.message,
+    stack: err.stack?.split('\n').slice(0, 8).join('\n'),
+  }).catch(() => {});
+});
+
+process.on('unhandledRejection', (reason: any) => {
+  console.error('[unhandledRejection]', reason);
+  sendAdminAlert('critical', 'UNHANDLED PROMISE REJECTION', {
+    errorMessage: reason?.message || String(reason),
+    stack: reason?.stack?.split('\n').slice(0, 8).join('\n'),
+  }).catch(() => {});
+});
 
 import { checkEnvironment } from "./check-env";
 checkEnvironment();
@@ -294,6 +311,20 @@ app.post("/api/upload", upload.array("files", 10), async (req, res) => {
   if (process.env.SENTRY_DSN) {
     Sentry.setupExpressErrorHandler(app);
   }
+
+  app.use((err: any, req: any, res: any, next: any) => {
+    const status = err.status || err.statusCode || 500;
+    if (status >= 500) {
+      sendAdminAlert('critical', `HTTP ${status} on ${req.method} ${req.path}`, {
+        url: req.path,
+        method: req.method,
+        userId: req.user?.id || req.session?.userId,
+        errorMessage: err.message,
+        stack: err.stack?.split('\n').slice(0, 5).join('\n'),
+      }).catch(() => {});
+    }
+    next(err);
+  });
 
   const { installErrorMonitor } = await import("./error-monitor");
   installErrorMonitor(app);

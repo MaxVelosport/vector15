@@ -1,3 +1,4 @@
+import { sendAdminAlert } from './admin-alerts';
 import type { Express } from "express";
 import type { Server } from "http";
 import { randomUUID } from "crypto";
@@ -3111,6 +3112,10 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
           const fresh = await storage.tryMarkWebhookEventProcessed(yp.id, 'yookassa');
           if (!fresh) {
             console.log("[YooKassa webhook] duplicate event ignored:", yp.id);
+            sendAdminAlert('critical', 'Duplicate ЮKassa webhook detected', {
+              errorMessage: `payment_id=${yp.id}, type=${meta?.type || 'unknown'}, amount=${yp.amount?.value || '?'}`,
+              userId: meta?.tutorId || meta?.studentId,
+            }).catch(() => {});
             return res.status(200).json({ status: "duplicate" });
           }
         }

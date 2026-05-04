@@ -323,6 +323,25 @@ class PlatformBotManager {
     } catch {}
   }
 
+  // Отправить по прямому chat_id — для админ-алертов, не использует БД
+  public async sendToChatId(
+    chatId: number | string,
+    text: string,
+    options?: TelegramBot.SendMessageOptions
+  ): Promise<boolean> {
+    if (!this.bot) {
+      console.warn('[telegram-bot] sendToChatId: бот не инициализирован');
+      return false;
+    }
+    try {
+      await this.bot.sendMessage(chatId, text, options);
+      return true;
+    } catch (err: any) {
+      console.error('[telegram-bot] sendToChatId failed:', err?.message || err);
+      return false;
+    }
+  }
+
   // ========================
   // MESSAGE HANDLERS
   // ========================
