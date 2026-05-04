@@ -1,4 +1,5 @@
 import type { Express, Request, Response, NextFunction } from "express";
+import { logger } from "./logger";
 
 interface CapturedError {
   id: string;
@@ -17,7 +18,7 @@ const buffer: CapturedError[] = [];
 function push(e: CapturedError) {
   buffer.unshift(e);
   if (buffer.length > MAX_BUFFER) buffer.length = MAX_BUFFER;
-  console.error(`[error-monitor] ${e.method} ${e.path} ${e.status}: ${e.message}`);
+  logger.error({ method: e.method, url: e.path, statusCode: e.status, tutorId: e.tutorId }, `[error-monitor] ${e.method} ${e.path} ${e.status}: ${e.message}`);
 }
 
 export function captureError(err: Error, context: { req?: Request; status?: number } = {}) {

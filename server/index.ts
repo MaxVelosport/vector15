@@ -1,6 +1,7 @@
 import "./instrument";
 import * as Sentry from "@sentry/node";
 import { sendAdminAlert } from "./admin-alerts";
+import { logger } from "./logger";
 
 process.on('uncaughtException', (err) => {
   console.error('[uncaughtException]', err);
@@ -198,14 +199,7 @@ app.use("/api", readLimiter);
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function log(message: string, source = "express") {
-  const formattedTime = new Date().toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,
-  });
-
-  console.log(`${formattedTime} [${source}] ${message}`);
+  logger.info({ source }, message);
 }
 
 app.use((req, res, next) => {
@@ -239,15 +233,26 @@ app.use((req, res, next) => {
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       const sensitive =
         SENSITIVE_LOG_PATHS.some((p) => path.startsWith(p)) ||
         SENSITIVE_LOG_PATH_RE.some((r) => r.test(path));
+
+      const level = res.statusCode >= 500 ? "error"
+                  : res.statusCode >= 400 ? "warn"
+                  : "info";
+
+      const fields: Record<string, any> = {
+        method: req.method,
+        url: path,
+        statusCode: res.statusCode,
+        duration,
+        userId: (req as any).session?.tutorId || (req as any).session?.studentId,
+      };
       if (capturedJsonResponse && !sensitive) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        fields.body = capturedJsonResponse;
       }
 
-      log(logLine);
+      logger[level](fields, `${req.method} ${path} ${res.statusCode} in ${duration}ms`);
     }
   });
 

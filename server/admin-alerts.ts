@@ -1,4 +1,5 @@
 import { botManager } from './telegram-bot';
+import { logger } from './logger';
 
 const ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
 
@@ -24,7 +25,7 @@ export async function sendAdminAlert(
   context?: AlertContext
 ): Promise<void> {
   if (!ADMIN_CHAT_ID) {
-    console.warn('[admin-alerts] TELEGRAM_ADMIN_CHAT_ID не задан, пропускаем алерт');
+    logger.warn('[admin-alerts] TELEGRAM_ADMIN_CHAT_ID не задан, пропускаем алерт');
     return;
   }
 
@@ -69,7 +70,7 @@ export async function sendAdminAlert(
       disable_notification: false,
     });
   } catch (error) {
-    console.error('[admin-alerts] Ошибка отправки алерта:', error);
+    logger.error({ err: error }, '[admin-alerts] Ошибка отправки алерта');
   }
 }
 
