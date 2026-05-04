@@ -1,5 +1,5 @@
-import * as dotenv from 'dotenv';
-dotenv.config();
+import "./instrument";
+import * as Sentry from "@sentry/node";
 
 import { checkEnvironment } from "./check-env";
 checkEnvironment();
@@ -290,6 +290,10 @@ app.post("/api/upload", upload.array("files", 10), async (req, res) => {
 
   const { startNotificationScheduler } = await import("./notification-scheduler");
   startNotificationScheduler();
+
+  if (process.env.SENTRY_DSN) {
+    Sentry.setupExpressErrorHandler(app);
+  }
 
   const { installErrorMonitor } = await import("./error-monitor");
   installErrorMonitor(app);

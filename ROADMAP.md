@@ -51,7 +51,7 @@
 - ⏳ Решить судьбу `n8n-telegram-bot-workflow.json` (используется или нет).
 
 ### Observability
-- ⏳ Sentry для frontend и backend (в `error-monitor.ts` сейчас только in-memory счётчик).
+- ✅ Error tracking: GlitchTip self-hosted (`errors.tvoyvector.ru`) + `@sentry/node@8` / `@sentry/react@8` — backend и frontend ошибки приходят в GlitchTip.
 - ⏳ Базовый health-check мониторинг (UptimeRobot / Healthchecks.io на `/api/health`).
 - ⏳ Алерты в Telegram при 5xx, при дубль-вебхуке ЮKassa, при недоступности Supabase.
 - ⏳ Структурное логирование: заменить `console.log` на pino/winston с JSON-форматом (для парсинга).
@@ -142,3 +142,4 @@
 - **2026-05-03** — W-13 закрыт как ложный баг. Pipeline промокодов AI-пакетов реализован корректно (клиент шлёт оригинальную цену из каталога, сервер сам применяет скидку, webhook фиксирует redemption).
 - **2026-05-03 (вечер)** — W-12 закрыт целиком. Realtime-коллаборация на доске Excalidraw восстановлена: 6 связанных багов исправлены (prop удалён в 0.18 — теперь `updateScene`; все курсоры под одним ключом — теперь `socketId` per connection; репетитор слал чужое имя — теперь `useAuth`; ученик не слал курсор вообще — добавлен `onPointerUpdate`; сервер не шлёт `socketId` в broadcast — теперь шлёт; цвета по роли через `ROLE_COLORS`). Smoke-test прошёл. Этап раннего тестирования ROADMAP можно начинать с этой фичей.
 - **2026-05-03 (вечер)** — Часть А Этапа 2 закрыта: удалены файлы Replit-окружения (1e0c1cd), 8 неиспользуемых dependencies (c5e3600), n8n workflow (d5a4d9b). Bundle и репозиторий чище, build всё ещё 59 сек.
+- **2026-05-04** — установлен GlitchTip (self-hosted, Sentry-совместимый) на `errors.tvoyvector.ru` через Docker Compose. Интегрированы `@sentry/node@8` и `@sentry/react@8` в backend и frontend vector15. `@sentry/node@10` оказался несовместим с GlitchTip 6.x (события дропались до транспорта из-за OTel-инструментации). Тестовые события подтверждены — error tracking работает. Часть Б Этапа 2 — error tracking готово, остальные пункты Observability (UptimeRobot, Telegram-алерты, структурное логирование) опциональны и не блокируют дальнейшую работу.
