@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { ExportDataModal } from "@/components/export-data-modal";
 import { DashboardLayout } from "@/components/dashboard-layout";
+import { PageTabs } from "@/components/page-tabs";
 import { PageHero } from "@/components/page-hero";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -566,6 +567,12 @@ export default function HomeworkPage() {
       }
     >
       <div className="space-y-6">
+        <PageTabs
+          tabs={[
+            { label: "Задания", path: "/homework" },
+            { label: "Тренажёры", path: "/quizzes" },
+          ]}
+        />
         <PageHero
           icon={<FileText className="h-6 w-6 text-white" />}
           gradient="from-violet-600/80 via-purple-600/70 to-indigo-600/60"

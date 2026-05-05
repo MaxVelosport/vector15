@@ -15,6 +15,8 @@ import { Sparkles, Plus, Trash2, Eye, Users, Loader2, BarChart3, BookOpen } from
 import type { Quiz, QuizAttempt, Student } from "@shared/schema";
 
 import { useDocumentTitle } from "@/hooks/use-document-title";
+import { DashboardLayout } from "@/components/dashboard-layout";
+import { PageTabs } from "@/components/page-tabs";
 type QQ = { q: string; options: string[]; correct: number; explanation?: string };
 
 export default function QuizzesPage() {
@@ -38,7 +40,14 @@ export default function QuizzesPage() {
   });
 
   return (
-    <div className="container max-w-6xl py-6 space-y-6">
+    <DashboardLayout title="Тренажёры" subtitle="Карточки и тесты для учеников">
+      <PageTabs
+        tabs={[
+          { label: "Задания", path: "/homework" },
+          { label: "Тренажёры", path: "/quizzes" },
+        ]}
+      />
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2"><BookOpen className="h-6 w-6" /> Тренажёры</h1>
@@ -131,7 +140,8 @@ export default function QuizzesPage() {
 
       <CreateQuizDialog open={createOpen} onOpenChange={setCreateOpen} students={students} />
       <ViewQuizDialog quiz={viewQuiz} onClose={() => setViewQuiz(null)} studentName={studentName} />
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
 

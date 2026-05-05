@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { DashboardLayout } from "@/components/dashboard-layout";
+import { PageTabs } from "@/components/page-tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -1484,6 +1485,12 @@ export default function LessonPlanPage() {
 
   return (
     <DashboardLayout title="Подготовка к уроку" subtitle="Планировщик, шаблоны ОГЭ/ЕГЭ и ИИ-генерация">
+      <PageTabs
+        tabs={[
+          { label: "Планы уроков", path: "/lesson-plan" },
+          { label: "Записи уроков", path: "/recordings" },
+        ]}
+      />
       <div className="page-hint-banner mb-3">
         <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
         <div className="text-sm text-muted-foreground leading-relaxed">

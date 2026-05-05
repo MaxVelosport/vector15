@@ -344,15 +344,11 @@ const navItems: { value: TabValue; label: string; icon: React.ElementType; path:
   { value: "home", label: "Главная", icon: LayoutGrid, path: "/", hint: "Обзор и быстрый доступ" },
   { value: "students", label: "Ученики", icon: Users, path: "/students", hint: "Управление учениками" },
   { value: "schedule", label: "Расписание", icon: GraduationCap, path: "/schedule", hint: "Расписание и журнал занятий" },
-  { value: "homework", label: "Домашки", icon: BookOpen, path: "/homework", hint: "Домашние задания учеников" },
-  { value: "quizzes", label: "Тренажёры", icon: BookOpen, path: "/quizzes", hint: "Тесты и карточки" },
-  { value: "recordings", label: "Записи уроков", icon: Video, path: "/recordings", hint: "Расшифровка и конспекты уроков" },
+  { value: "homework", label: "Домашки", icon: BookOpen, path: "/homework", hint: "Домашние задания и тренажёры" },
   { value: "finance", label: "Финансы", icon: CircleDollarSign, path: "/finance", hint: "Платежи, долги, статистика, аналитика" },
   { value: "chat", label: "Сообщения", icon: MessageCircle, path: "/chat", hint: "Чаты и рассылки ученикам" },
-  { value: "tasks", label: "Задачник", icon: FlaskConical, path: "/tasks", hint: "База заданий — составляйте варианты и назначайте ученикам" },
-  { value: "ai", label: "ИИ-помощник", icon: Bot, path: "/ai", hint: "Генерация задач и проверка" },
-  { value: "lesson-plan", label: "Планировщик", icon: ClipboardList, path: "/lesson-plan", hint: "Планы уроков, шаблоны ОГЭ/ЕГЭ и ИИ-генерация" },
-  { value: "referrals", label: "Приведи друга", icon: Gift, path: "/referrals", hint: "Реферальная программа — пригласите коллег и получите бонусы" },
+  { value: "ai", label: "ИИ-помощник", icon: Bot, path: "/ai", hint: "Чат с ИИ и задачник для генерации заданий" },
+  { value: "lesson-plan", label: "Планировщик", icon: ClipboardList, path: "/lesson-plan", hint: "Планы уроков и записи прошедших занятий" },
 ];
 
 function DashboardSidebar({ currentPath }: { currentPath: string }) {
@@ -367,6 +363,9 @@ function DashboardSidebar({ currentPath }: { currentPath: string }) {
     if (currentPath === "/lessons") return "schedule";
     if (currentPath === "/comm") return "chat";
     if (currentPath === "/analytics") return "finance";
+    if (currentPath === "/quizzes") return "homework";
+    if (currentPath === "/tasks") return "ai";
+    if (currentPath === "/recordings" || currentPath.startsWith("/recording/")) return "lesson-plan";
     return "home";
   };
 
@@ -449,6 +448,20 @@ function DashboardSidebar({ currentPath }: { currentPath: string }) {
 
       <div className="relative z-10 border-t border-sidebar-border p-3 space-y-0.5">
         <a
+          href="/referrals"
+          onClick={(e) => { e.preventDefault(); setLocation("/referrals"); }}
+          className={cn(
+            "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-colors",
+            currentPath === "/referrals"
+              ? "bg-primary/10 text-primary"
+              : "text-sidebar-foreground/70 hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400"
+          )}
+          data-testid="sidebar-referrals"
+        >
+          <Gift className={cn("h-[18px] w-[18px]", currentPath === "/referrals" ? "text-primary" : "text-sidebar-foreground/45")} />
+          <span>Приведи друга</span>
+        </a>
+        <a
           href="/help"
           onClick={(e) => { e.preventDefault(); setLocation("/help"); }}
           className={cn(
@@ -515,6 +528,9 @@ function DashboardMobileNav({ currentPath }: { currentPath: string }) {
     if (currentPath === "/lessons") return "schedule";
     if (currentPath === "/comm") return "chat";
     if (currentPath === "/analytics") return "finance";
+    if (currentPath === "/quizzes") return "homework";
+    if (currentPath === "/tasks") return "ai";
+    if (currentPath === "/recordings" || currentPath.startsWith("/recording/")) return "lesson-plan";
     return "home";
   };
 

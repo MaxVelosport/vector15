@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest, invalidateResource } from "@/lib/queryClient";
 import { DashboardLayout } from "@/components/dashboard-layout";
+import { PageTabs } from "@/components/page-tabs";
 import { PageHero } from "@/components/page-hero";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -828,6 +829,12 @@ export default function TasksPage() {
 
   return (
     <DashboardLayout title="База заданий" subtitle="Задачник — составляйте варианты и отправляйте ученикам">
+      <PageTabs
+        tabs={[
+          { label: "Чат с ИИ", path: "/ai" },
+          { label: "Задачник", path: "/tasks" },
+        ]}
+      />
       <PageHero
         icon={<BookMarked className="h-6 w-6 text-white" />}
         gradient="from-indigo-600/80 via-violet-600/70 to-purple-600/60"

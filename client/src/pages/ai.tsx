@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/dashboard-layout";
+import { PageTabs } from "@/components/page-tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -443,6 +444,12 @@ export default function AIPage() {
 
   return (
     <DashboardLayout title="ИИ-помощник" subtitle="Генерация заданий, планирование уроков">
+      <PageTabs
+        tabs={[
+          { label: "Чат с ИИ", path: "/ai" },
+          { label: "Задачник", path: "/tasks" },
+        ]}
+      />
       <div className="flex flex-col h-[calc(100vh-140px)] min-h-[400px]">
         <div className="page-hint-banner mb-3" data-testid="hint-ai">
           <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />

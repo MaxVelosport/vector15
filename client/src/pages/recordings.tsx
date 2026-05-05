@@ -17,6 +17,8 @@ import {
 import type { LessonRecording, Student } from "@shared/schema";
 
 import { useDocumentTitle } from "@/hooks/use-document-title";
+import { DashboardLayout } from "@/components/dashboard-layout";
+import { PageTabs } from "@/components/page-tabs";
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; className: string; icon?: any }> = {
     pending:      { label: "Ожидает аудио",   className: "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200" },
@@ -94,7 +96,14 @@ function RecordingsList() {
   });
 
   return (
-    <div className="container max-w-6xl py-6 space-y-6">
+    <DashboardLayout title="Записи уроков" subtitle="Расшифровка и автоконспект">
+      <PageTabs
+        tabs={[
+          { label: "Планы уроков", path: "/lesson-plan" },
+          { label: "Записи уроков", path: "/recordings" },
+        ]}
+      />
+      <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -193,7 +202,8 @@ function RecordingsList() {
       )}
 
       <UploadDialog open={uploadOpen} onOpenChange={setUploadOpen} students={students} />
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
 
