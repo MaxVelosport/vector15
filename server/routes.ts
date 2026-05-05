@@ -1,4 +1,5 @@
 import { sendAdminAlert } from './admin-alerts';
+import { validatePromoForScope, calculatePromoDiscountKop, type PromoValidationReason } from "./promo-pricing";
 import type { Express } from "express";
 import type { Server } from "http";
 import { randomUUID } from "crypto";
@@ -2114,30 +2115,28 @@ A: Кнопка ⇄ рядом с занятием → выбрать новое
       if (promoCode && promoCode.trim()) {
         const promo = await storage.getPromoCodeByCode(promoCode.trim());
         if (!promo) return res.status(400).json({ error: "Промокод не найден" });
+
+        // Раннняя scope-проверка — экономим DB-запрос hasUserRedeemed на чужих промокодах
         if (promo.scope !== 'all' && promo.scope !== 'ai_packages') {
           return res.status(400).json({ error: "Промокод не применим к ИИ-пакетам" });
         }
-        if (await storage.hasUserRedeemed(promo.id, tutorId)) {
-          return res.status(400).json({ error: "Вы уже использовали этот промокод" });
+
+        const alreadyRedeemed = await storage.hasUserRedeemed(promo.id, tutorId);
+        const validation = validatePromoForScope(promo as any, 'ai_packages', alreadyRedeemed);
+        if (!validation.ok) {
+          const messages: Record<PromoValidationReason, string> = {
+            not_applicable: "Промокод не применим к ИИ-пакетам",
+            already_redeemed: "Вы уже использовали этот промокод",
+            inactive: "Промокод деактивирован",
+            not_yet_valid: "Промокод ещё не действует",
+            expired: "Срок действия промокода истёк",
+            max_uses_reached: "Лимит использований промокода исчерпан",
+          };
+          return res.status(400).json({ error: messages[validation.reason] });
         }
+
         const amountKop = Math.round(validOption.price * 100);
-        if (!promo.isActive) return res.status(400).json({ error: "Промокод деактивирован" });
-        if (promo.validFrom && new Date(promo.validFrom).getTime() > Date.now()) {
-          return res.status(400).json({ error: "Промокод ещё не действует" });
-        }
-        if (promo.validUntil && new Date(promo.validUntil).getTime() < Date.now()) {
-          return res.status(400).json({ error: "Срок действия промокода истёк" });
-        }
-        if (promo.maxUses != null && promo.usedCount >= promo.maxUses) {
-          return res.status(400).json({ error: "Лимит использований промокода исчерпан" });
-        }
-        let discountKop = 0;
-        if (promo.discountType === 'percent') {
-          const pct = Math.max(0, Math.min(100, Number(promo.discountValue) || 0));
-          discountKop = Math.floor((amountKop * pct) / 100);
-        } else {
-          discountKop = Math.min(amountKop, Math.floor(Number(promo.discountValue) * 100));
-        }
+        const discountKop = calculatePromoDiscountKop(amountKop, promo as any);
         finalPrice = Math.max(1, (amountKop - discountKop) / 100); // мин 1 ₽ для ЮКассы
         appliedPromoId = promo.id;
       }
