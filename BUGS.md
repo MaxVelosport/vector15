@@ -11,10 +11,15 @@
 
 ## 🔴 Критичные риски
 
-### CR-1. Декларативные FK в `shared/schema.ts` могут не существовать в Supabase
-- **Где:** `shared/schema.ts` — `.references(() => …, { onDelete: 'cascade' })`.
-- **Проблема:** Drizzle-схема описывает FK, но реальные таблицы создаются сырым SQL в `server/seed-demo-auto.ts`, и не во всех `CREATE TABLE` есть `REFERENCES`. Расчёт на каскадное удаление может не сработать → орфанные записи или ошибки целостности.
-- **Что делать:** прогнать `pg_dump` схемы Supabase, сверить с `schema.ts`, добавить недостающие FK миграцией в `seed-demo-auto.ts`.
+### ✅ CR-1. DB-целостность — ЗАКРЫТО 2026-05-05
+
+**Что сделано:**
+- Добавлена `ensureForeignKeys()` в `server/seed-demo-auto.ts` — идемпотентная миграция, вызывается при каждом старте.
+- Конверсия varchar → uuid для 3 таблиц, созданных вручную в Dashboard: `lesson_recordings` (5 полей), `quizzes` (3 поля), `quiz_attempts` (4 поля).
+- `lesson_history.student_id` и `lesson_history.lesson_id` сделаны nullable (аудит-лог сохраняется при удалении студента/урока).
+- Очищены 4 orphan-записи (мусор от удалённых репетиторов/студентов/квизов).
+- Добавлены 24 FK-ограничения. Итого в БД: **58 FK** (было 34).
+- `runSQLStrict()` — новая функция с проверкой HTTP-ответа (ошибки больше не глотаются молча).
 
 ### CR-2. `notification-scheduler` рассчитан только на single-instance
 - **Где:** `server/notification-scheduler.ts` — гонки исключаются in-process lock + CAS по `parent_report_last_sent_at`.
@@ -58,10 +63,9 @@
 - **Проблема:** любые правки storage/routes делаются «вслепую», регрессии ловятся в проде.
 - **Что делать:** перед декомпозицией god-files — обвязать критичные роуты (auth, payments webhook, applications status transitions) интеграционными тестами через supertest (как в `tests/api/payments.test.ts`).
 
-### W-3. Двойной префикс таблиц `Replit_*` vs `Tvoy_vector_2_*`
-- **Где:** `shared/schema.ts` использует `pgTable("Replit_tutors", …)`, реальная БД — `Tvoy_vector_2_tutors`. Имена в schema.ts существуют только для вывода TS-типов.
-- **Проблема:** новый разработчик/AI может попробовать запустить Drizzle-запрос на эти имена и получить 0 строк или ошибку.
-- **Что делать:** переименовать таблицы в `schema.ts` на реальные `Tvoy_vector_2_*` (а если ломает Drizzle-кэш — использовать `pgTableCreator` с префиксом).
+### ✅ W-3. Двойной префикс таблиц — ЗАКРЫТО 2026-05-05
+
+Все 37 `pgTable("Replit_*", …)` в `shared/schema.ts` переименованы в `pgTable("Tvoy_vector_2_*", …)`. Префикс в schema.ts теперь совпадает с реальной БД. `npm run check` зелёный.
 
 ### W-4. `req as any` / `(req.session as any)` в auth-middleware
 - **Где:** `server/auth.ts:22, 31, 52`.

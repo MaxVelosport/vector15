@@ -39,7 +39,7 @@
 
 ---
 
-## Этап 2. Стабилизация после переезда ⏳
+## Этап 2. Стабилизация после переезда ✅
 
 **Цель:** убрать legacy-наследие Replit, поднять observability.
 
@@ -56,9 +56,9 @@
 - ✅ Telegram-алерты для critical-событий — модуль `server/admin-alerts.ts`. Источники: HTTP 5xx через Express middleware, `uncaughtException`/`unhandledRejection` через `process.on`, дубль-webhook ЮKassa в `/api/payments/webhook`. Отправка через существующего Telegram-бота (`botManager.sendToChatId`) на `TELEGRAM_ADMIN_CHAT_ID`. Markdown-форматирование, обрезка по лимиту, никогда не throw. Алерты со звуком.
 - ✅ Структурное логирование: `pino` + `pino-pretty` — JSON в production, pretty в dev. `server/logger.ts` с redact (пароли/токены), уровни по HTTP-статусу (5xx→error, 4xx→warn), структурные поля в request middleware. Базовые файлы переведены; god-files (routes.ts, telegram-bot.ts) — постепенно в Этапе 3.
 
-### DB-целостность
-- ⏳ Сверка реальных FK в Supabase с `shared/schema.ts` (см. BUGS.md → CR-1). Добавить недостающие миграцией.
-- ⏳ Переименовать `Replit_*` → `Tvoy_vector_2_*` в `schema.ts` (см. BUGS.md → W-3).
+### DB-целостность ✅
+- ✅ FK-сверка и миграция: 24 недостающих FK добавлены через `ensureForeignKeys()` в `seed-demo-auto.ts`. Итого в БД 58 FK. Конверсия varchar→uuid для 3 таблиц. Orphans очищены. (CR-1, 2026-05-05)
+- ✅ Переименованы все 37 `Replit_*` → `Tvoy_vector_2_*` в `shared/schema.ts`. (W-3, 2026-05-05)
 
 ---
 
@@ -145,3 +145,4 @@
 - **2026-05-04** — установлен GlitchTip (self-hosted, Sentry-совместимый) на `errors.tvoyvector.ru` через Docker Compose. Интегрированы `@sentry/node@8` и `@sentry/react@8` в backend и frontend vector15. `@sentry/node@10` оказался несовместим с GlitchTip 6.x (события дропались до транспорта из-за OTel-инструментации). Тестовые события подтверждены — error tracking работает. Часть Б Этапа 2 — error tracking готово, остальные пункты Observability (UptimeRobot, Telegram-алерты, структурное логирование) опциональны и не блокируют дальнейшую работу.
 - **2026-05-04 (продолжение)** — структурное логирование через pino. `server/logger.ts` с redact, JSON в prod / pretty в dev. Request middleware с уровнями по статусу. Переведены: `server/index.ts`, `server/admin-alerts.ts`, `server/error-monitor.ts`. God-files отложены на Этап 3. Все 4 пункта Observability Части Б закрыты.
 - **2026-05-04 (продолжение)** — Telegram-алерты готовы. Модуль `server/admin-alerts.ts` с функцией `sendAdminAlert(level, title, context)`. Подключено к 3 источникам critical: HTTP 5xx (Express middleware), `uncaughtException`/`unhandledRejection` (process handlers), дубль ЮKassa webhook. Использует существующий `botManager.sendToChatId` через новый публичный метод. Тестовый алерт подтверждён получен в Telegram.
+- **2026-05-05** — Часть В Этапа 2 закрыта (CR-1 + W-3). DB-целостность: добавлена `ensureForeignKeys()` + `runSQLStrict()` в `seed-demo-auto.ts`; конверсия varchar→uuid для `lesson_recordings`, `quizzes`, `quiz_attempts`; `lesson_history.student_id/lesson_id` сделаны nullable; очищены 4 orphan-записи; добавлены 24 FK, итого 58 FK в Supabase. Все 37 `Replit_*` переименованы в `Tvoy_vector_2_*` в `shared/schema.ts`. **Этап 2 завершён полностью.**

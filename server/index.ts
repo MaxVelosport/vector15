@@ -31,7 +31,7 @@ import { registerRoutes } from "./routes";
 import { registerStudentRoutes } from "./student-routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
-import { seedDemoAccountIfNotExists, ensureStudentApplicationsTable, ensureStudentAuthColumns, ensurePromoCodesTable } from "./seed-demo-auto";
+import { seedDemoAccountIfNotExists, ensureStudentApplicationsTable, ensureStudentAuthColumns, ensurePromoCodesTable, ensureForeignKeys } from "./seed-demo-auto";
 import { SupabaseSessionStore } from "./session-store";
 import { botManager } from "./telegram-bot";
 import {
@@ -297,6 +297,7 @@ app.post("/api/upload", upload.array("files", 10), async (req, res) => {
   try { await ensureStudentApplicationsTable(); } catch (e) { console.error("[migrate] student_applications:", e); }
   try { await ensureStudentAuthColumns(); } catch (e) { console.error("[migrate] student_auth:", e); }
   try { await ensurePromoCodesTable(); } catch (e) { console.error("[migrate] promo_codes:", e); }
+  try { await ensureForeignKeys(); } catch (e) { console.error("[migrate] foreign_keys:", e); }
 
   await seedDemoAccountIfNotExists();
   registerStudentRoutes(app);

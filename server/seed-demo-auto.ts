@@ -23,6 +23,20 @@ async function runSQL(query: string) {
   });
 }
 
+async function runSQLStrict(query: string, label: string): Promise<void> {
+  const baseUrl = (process.env.SUPABASE_URL || BUILTIN_SUPABASE_URL).replace(/\/+$/, "");
+  const key = process.env.SUPABASE_SERVICE_KEY || BUILTIN_SUPABASE_SVC;
+  const response = await fetch(`${baseUrl}/pg/query`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", apikey: key, Authorization: `Bearer ${key}` },
+    body: JSON.stringify({ query }),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`[${label}] SQL failed: ${response.status} ${text.slice(0, 500)}`);
+  }
+}
+
 async function ensureColumns() {
   await runSQL(`
     ALTER TABLE "${TABLE_PREFIX}tutors" ADD COLUMN IF NOT EXISTS bot_token TEXT;
@@ -142,8 +156,8 @@ async function ensureLessonHistoryTable() {
   await runSQL(`
     CREATE TABLE IF NOT EXISTS "${TABLE_PREFIX}lesson_history" (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      lesson_id UUID NOT NULL,
-      student_id UUID NOT NULL,
+      lesson_id UUID,
+      student_id UUID,
       tutor_id UUID NOT NULL,
       old_status TEXT,
       new_status TEXT,
@@ -977,6 +991,493 @@ async function ensureBackupsTable() {
     CREATE INDEX IF NOT EXISTS "${TABLE_PREFIX}backups_tutor_idx" ON "${TABLE_PREFIX}backups" (tutor_id, created_at DESC);
   `);
   console.log("✅ Backups table ready");
+}
+
+// ─── FK-миграция (идемпотентная) ──────────────────────────────────────────────
+export async function ensureForeignKeys() {
+  // Часть 1: конверсия varchar → uuid для таблиц, созданных вручную в Dashboard.
+  // Уже применилась при первом запуске — при повторных запусках ничего не делает
+  // (ALTER COLUMN на уже-UUID-колонке — no-op в Postgres).
+  await runSQLStrict(`
+    ALTER TABLE "${TABLE_PREFIX}lesson_recordings"
+      ALTER COLUMN id TYPE UUID USING id::uuid;
+    ALTER TABLE "${TABLE_PREFIX}lesson_recordings"
+      ALTER COLUMN tutor_id TYPE UUID USING tutor_id::uuid;
+    ALTER TABLE "${TABLE_PREFIX}lesson_recordings"
+      ALTER COLUMN student_id TYPE UUID USING student_id::uuid;
+    ALTER TABLE "${TABLE_PREFIX}lesson_recordings"
+      ALTER COLUMN conference_id TYPE UUID USING conference_id::uuid;
+    ALTER TABLE "${TABLE_PREFIX}lesson_recordings"
+      ALTER COLUMN lesson_id TYPE UUID USING lesson_id::uuid;
+  `, "convert lesson_recordings types");
+
+  await runSQLStrict(`
+    ALTER TABLE "${TABLE_PREFIX}quizzes"
+      ALTER COLUMN id TYPE UUID USING id::uuid;
+    ALTER TABLE "${TABLE_PREFIX}quizzes"
+      ALTER COLUMN tutor_id TYPE UUID USING tutor_id::uuid;
+    ALTER TABLE "${TABLE_PREFIX}quizzes"
+      ALTER COLUMN student_id TYPE UUID USING student_id::uuid;
+  `, "convert quizzes types");
+
+  await runSQLStrict(`
+    ALTER TABLE "${TABLE_PREFIX}quiz_attempts"
+      ALTER COLUMN id TYPE UUID USING id::uuid;
+    ALTER TABLE "${TABLE_PREFIX}quiz_attempts"
+      ALTER COLUMN quiz_id TYPE UUID USING quiz_id::uuid;
+    ALTER TABLE "${TABLE_PREFIX}quiz_attempts"
+      ALTER COLUMN student_id TYPE UUID USING student_id::uuid;
+    ALTER TABLE "${TABLE_PREFIX}quiz_attempts"
+      ALTER COLUMN tutor_id TYPE UUID USING tutor_id::uuid;
+  `, "convert quiz_attempts types");
+
+  // Часть 2: lesson_history — снимаем NOT NULL с колонок аудит-лога
+  // (аудит-запись должна выживать при удалении студента/урока)
+  await runSQLStrict(`
+    ALTER TABLE "${TABLE_PREFIX}lesson_history"
+      ALTER COLUMN student_id DROP NOT NULL;
+    ALTER TABLE "${TABLE_PREFIX}lesson_history"
+      ALTER COLUMN lesson_id DROP NOT NULL;
+  `, "lesson_history nullable for audit log");
+
+  // Часть 3: очистка orphans перед добавлением FK
+  await runSQLStrict(`
+    DELETE FROM "${TABLE_PREFIX}email_verification_tokens"
+      WHERE tutor_id NOT IN (SELECT id FROM "${TABLE_PREFIX}tutors");
+    DELETE FROM "${TABLE_PREFIX}quiz_attempts"
+      WHERE quiz_id NOT IN (SELECT id FROM "${TABLE_PREFIX}quizzes");
+    UPDATE "${TABLE_PREFIX}lesson_history"
+      SET student_id = NULL
+      WHERE student_id IS NOT NULL
+        AND student_id NOT IN (SELECT id FROM "${TABLE_PREFIX}students");
+    UPDATE "${TABLE_PREFIX}lesson_history"
+      SET lesson_id = NULL
+      WHERE lesson_id IS NOT NULL
+        AND lesson_id NOT IN (SELECT id FROM "${TABLE_PREFIX}lessons");
+  `, "cleanup orphans");
+
+  // Часть 4: добавление FK — каждый в своём подблоке, независимо от других
+  await runSQLStrict(`
+    DO $$
+    DECLARE
+      err_text TEXT;
+      added_count INT := 0;
+      skipped_count INT := 0;
+      failed_count INT := 0;
+    BEGIN
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}student_applications"
+          ADD CONSTRAINT fk_student_applications_tutor
+          FOREIGN KEY (tutor_id) REFERENCES "${TABLE_PREFIX}tutors"(id) ON DELETE CASCADE;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_student_applications_tutor — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_student_applications_tutor — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}task_variants"
+          ADD CONSTRAINT fk_task_variants_tutor
+          FOREIGN KEY (tutor_id) REFERENCES "${TABLE_PREFIX}tutors"(id) ON DELETE CASCADE;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_task_variants_tutor — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_task_variants_tutor — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}variant_assignments"
+          ADD CONSTRAINT fk_variant_assignments_student
+          FOREIGN KEY (student_id) REFERENCES "${TABLE_PREFIX}students"(id) ON DELETE CASCADE;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_variant_assignments_student — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_variant_assignments_student — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}variant_assignments"
+          ADD CONSTRAINT fk_variant_assignments_tutor
+          FOREIGN KEY (tutor_id) REFERENCES "${TABLE_PREFIX}tutors"(id) ON DELETE CASCADE;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_variant_assignments_tutor — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_variant_assignments_tutor — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}saved_lesson_plans"
+          ADD CONSTRAINT fk_saved_lesson_plans_tutor
+          FOREIGN KEY (tutor_id) REFERENCES "${TABLE_PREFIX}tutors"(id) ON DELETE CASCADE;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_saved_lesson_plans_tutor — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_saved_lesson_plans_tutor — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}boards"
+          ADD CONSTRAINT fk_boards_student
+          FOREIGN KEY (student_id) REFERENCES "${TABLE_PREFIX}students"(id) ON DELETE CASCADE;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_boards_student — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_boards_student — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}board_archives"
+          ADD CONSTRAINT fk_board_archives_student
+          FOREIGN KEY (student_id) REFERENCES "${TABLE_PREFIX}students"(id) ON DELETE CASCADE;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_board_archives_student — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_board_archives_student — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}lesson_history"
+          ADD CONSTRAINT fk_lesson_history_tutor
+          FOREIGN KEY (tutor_id) REFERENCES "${TABLE_PREFIX}tutors"(id) ON DELETE CASCADE;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_lesson_history_tutor — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_lesson_history_tutor — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}lesson_history"
+          ADD CONSTRAINT fk_lesson_history_student
+          FOREIGN KEY (student_id) REFERENCES "${TABLE_PREFIX}students"(id) ON DELETE SET NULL;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_lesson_history_student — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_lesson_history_student — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}lesson_history"
+          ADD CONSTRAINT fk_lesson_history_lesson
+          FOREIGN KEY (lesson_id) REFERENCES "${TABLE_PREFIX}lessons"(id) ON DELETE SET NULL;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_lesson_history_lesson — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_lesson_history_lesson — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}email_verification_tokens"
+          ADD CONSTRAINT fk_email_verification_tokens_tutor
+          FOREIGN KEY (tutor_id) REFERENCES "${TABLE_PREFIX}tutors"(id) ON DELETE CASCADE;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_email_verification_tokens_tutor — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_email_verification_tokens_tutor — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}student_email_verification_tokens"
+          ADD CONSTRAINT fk_student_email_verif_student
+          FOREIGN KEY (student_id) REFERENCES "${TABLE_PREFIX}students"(id) ON DELETE CASCADE;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_student_email_verif_student — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_student_email_verif_student — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}student_password_reset_tokens"
+          ADD CONSTRAINT fk_student_pwd_reset_student
+          FOREIGN KEY (student_id) REFERENCES "${TABLE_PREFIX}students"(id) ON DELETE CASCADE;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_student_pwd_reset_student — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_student_pwd_reset_student — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}two_factor_codes"
+          ADD CONSTRAINT fk_two_factor_codes_tutor
+          FOREIGN KEY (tutor_id) REFERENCES "${TABLE_PREFIX}tutors"(id) ON DELETE CASCADE;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_two_factor_codes_tutor — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_two_factor_codes_tutor — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}promo_code_redemptions"
+          ADD CONSTRAINT fk_promo_code_redemptions_promo_code
+          FOREIGN KEY (promo_code_id) REFERENCES "${TABLE_PREFIX}promo_codes"(id) ON DELETE CASCADE;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_promo_code_redemptions_promo_code — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_promo_code_redemptions_promo_code — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}lesson_recordings"
+          ADD CONSTRAINT fk_lesson_recordings_tutor
+          FOREIGN KEY (tutor_id) REFERENCES "${TABLE_PREFIX}tutors"(id) ON DELETE CASCADE;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_lesson_recordings_tutor — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_lesson_recordings_tutor — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}lesson_recordings"
+          ADD CONSTRAINT fk_lesson_recordings_student
+          FOREIGN KEY (student_id) REFERENCES "${TABLE_PREFIX}students"(id) ON DELETE SET NULL;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_lesson_recordings_student — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_lesson_recordings_student — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}lesson_recordings"
+          ADD CONSTRAINT fk_lesson_recordings_conference
+          FOREIGN KEY (conference_id) REFERENCES "${TABLE_PREFIX}conferences"(id) ON DELETE SET NULL;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_lesson_recordings_conference — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_lesson_recordings_conference — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}lesson_recordings"
+          ADD CONSTRAINT fk_lesson_recordings_lesson
+          FOREIGN KEY (lesson_id) REFERENCES "${TABLE_PREFIX}lessons"(id) ON DELETE SET NULL;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_lesson_recordings_lesson — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_lesson_recordings_lesson — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}quizzes"
+          ADD CONSTRAINT fk_quizzes_tutor
+          FOREIGN KEY (tutor_id) REFERENCES "${TABLE_PREFIX}tutors"(id) ON DELETE CASCADE;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_quizzes_tutor — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_quizzes_tutor — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}quizzes"
+          ADD CONSTRAINT fk_quizzes_student
+          FOREIGN KEY (student_id) REFERENCES "${TABLE_PREFIX}students"(id) ON DELETE CASCADE;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_quizzes_student — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_quizzes_student — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}quiz_attempts"
+          ADD CONSTRAINT fk_quiz_attempts_quiz
+          FOREIGN KEY (quiz_id) REFERENCES "${TABLE_PREFIX}quizzes"(id) ON DELETE CASCADE;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_quiz_attempts_quiz — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_quiz_attempts_quiz — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}quiz_attempts"
+          ADD CONSTRAINT fk_quiz_attempts_student
+          FOREIGN KEY (student_id) REFERENCES "${TABLE_PREFIX}students"(id) ON DELETE CASCADE;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_quiz_attempts_student — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_quiz_attempts_student — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      BEGIN
+        ALTER TABLE "${TABLE_PREFIX}quiz_attempts"
+          ADD CONSTRAINT fk_quiz_attempts_tutor
+          FOREIGN KEY (tutor_id) REFERENCES "${TABLE_PREFIX}tutors"(id) ON DELETE CASCADE;
+        added_count := added_count + 1;
+      EXCEPTION
+        WHEN duplicate_object THEN skipped_count := skipped_count + 1;
+        WHEN foreign_key_violation THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE NOTICE 'Orphan: fk_quiz_attempts_tutor — %', err_text;
+          failed_count := failed_count + 1;
+        WHEN OTHERS THEN
+          GET STACKED DIAGNOSTICS err_text = MESSAGE_TEXT;
+          RAISE WARNING 'Failed: fk_quiz_attempts_tutor — %', err_text;
+          failed_count := failed_count + 1;
+      END;
+
+      RAISE NOTICE 'FK migration: added=%, skipped=%, failed=%', added_count, skipped_count, failed_count;
+    END $$;
+  `, "add foreign keys");
+
+  console.log("✅ Foreign keys ensured");
 }
 
 // ─── MAIN ─────────────────────────────────────────────────────────────────────

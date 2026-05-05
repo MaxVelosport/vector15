@@ -4,7 +4,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Репетиторы (tutors)
-export const tutors = pgTable("Replit_tutors", {
+export const tutors = pgTable("Tvoy_vector_2_tutors", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
@@ -57,7 +57,7 @@ export type InsertTutor = z.infer<typeof insertTutorSchema>;
 export type Tutor = typeof tutors.$inferSelect;
 
 // Ученики (students)
-export const students = pgTable("Replit_students", {
+export const students = pgTable("Tvoy_vector_2_students", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull().references(() => tutors.id, { onDelete: 'cascade' }),
   name: text("name").notNull(),
@@ -101,7 +101,7 @@ export type InsertStudent = z.infer<typeof insertStudentSchema>;
 export type Student = typeof students.$inferSelect;
 
 // Занятия (lessons)
-export const lessons = pgTable("Replit_lessons", {
+export const lessons = pgTable("Tvoy_vector_2_lessons", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull().references(() => tutors.id, { onDelete: 'cascade' }),
   studentId: varchar("student_id").notNull().references(() => students.id, { onDelete: 'cascade' }),
@@ -125,7 +125,7 @@ export type InsertLesson = z.infer<typeof insertLessonSchema>;
 export type Lesson = typeof lessons.$inferSelect;
 
 // Платежи (payments)
-export const payments = pgTable("Replit_payments", {
+export const payments = pgTable("Tvoy_vector_2_payments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull().references(() => tutors.id, { onDelete: 'cascade' }),
   studentId: varchar("student_id").notNull().references(() => students.id, { onDelete: 'cascade' }),
@@ -146,7 +146,7 @@ export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 export type Payment = typeof payments.$inferSelect;
 
 // Задания (tasks)
-export const tasks = pgTable("Replit_tasks", {
+export const tasks = pgTable("Tvoy_vector_2_tasks", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull().references(() => tutors.id, { onDelete: 'cascade' }),
   topic: text("topic").notNull(),
@@ -166,7 +166,7 @@ export type InsertTask = z.infer<typeof insertTaskSchema>;
 export type Task = typeof tasks.$inferSelect;
 
 // Домашние задания (homework)
-export const homework = pgTable("Replit_homework", {
+export const homework = pgTable("Tvoy_vector_2_homework", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull().references(() => tutors.id, { onDelete: 'cascade' }),
   studentId: varchar("student_id").notNull().references(() => students.id, { onDelete: 'cascade' }),
@@ -195,7 +195,7 @@ export type InsertHomework = z.infer<typeof insertHomeworkSchema>;
 export type Homework = typeof homework.$inferSelect;
 
 // Цены подписок (subscription_prices) - глобальная настройка
-export const subscriptionPrices = pgTable("Replit_subscription_prices", {
+export const subscriptionPrices = pgTable("Tvoy_vector_2_subscription_prices", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tier: text("tier").notNull().unique(), // 'pro' | 'premium'
   priceMonthly: integer("price_monthly").notNull(), // цена в рублях за месяц
@@ -213,7 +213,7 @@ export type InsertSubscriptionPrice = z.infer<typeof insertSubscriptionPriceSche
 export type SubscriptionPrice = typeof subscriptionPrices.$inferSelect;
 
 // Платежи за подписку (subscription_payments)
-export const subscriptionPayments = pgTable("Replit_subscription_payments", {
+export const subscriptionPayments = pgTable("Tvoy_vector_2_subscription_payments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull().references(() => tutors.id, { onDelete: 'cascade' }),
   tier: text("tier").notNull(), // 'pro' | 'premium'
@@ -235,7 +235,7 @@ export type InsertSubscriptionPayment = z.infer<typeof insertSubscriptionPayment
 export type SubscriptionPayment = typeof subscriptionPayments.$inferSelect;
 
 // Уведомления (notifications)
-export const notifications = pgTable("Replit_notifications", {
+export const notifications = pgTable("Tvoy_vector_2_notifications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull().references(() => tutors.id, { onDelete: 'cascade' }),
   type: text("type").notNull(), // 'lesson_reminder' | 'payment_reminder' | 'birthday' | 'homework_deadline' | 'system'
@@ -256,7 +256,7 @@ export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
 
 // Заявки от учеников (self-registration через каталог / публичный профиль)
-export const studentApplications = pgTable("Replit_student_applications", {
+export const studentApplications = pgTable("Tvoy_vector_2_student_applications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull().references(() => tutors.id, { onDelete: 'cascade' }),
   name: text("name").notNull(),
@@ -281,7 +281,7 @@ export type InsertStudentApplication = z.infer<typeof insertStudentApplicationSc
 export type StudentApplication = typeof studentApplications.$inferSelect;
 
 // Шаблоны занятий (lesson_templates)
-export const lessonTemplates = pgTable("Replit_lesson_templates", {
+export const lessonTemplates = pgTable("Tvoy_vector_2_lesson_templates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull().references(() => tutors.id, { onDelete: 'cascade' }),
   title: text("title").notNull(),
@@ -382,7 +382,7 @@ export const EXTRA_STUDENT_PACKAGES = [
 ] as const;
 
 // Токены сброса пароля (password_reset_tokens)
-export const passwordResetTokens = pgTable("Replit_password_reset_tokens", {
+export const passwordResetTokens = pgTable("Tvoy_vector_2_password_reset_tokens", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull().references(() => tutors.id, { onDelete: 'cascade' }),
   token: text("token").notNull().unique(),
@@ -400,7 +400,7 @@ export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSc
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 
 // Токены доступа для учеников (student_access_tokens)
-export const studentAccessTokens = pgTable("Replit_student_access_tokens", {
+export const studentAccessTokens = pgTable("Tvoy_vector_2_student_access_tokens", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   studentId: varchar("student_id").notNull().references(() => students.id, { onDelete: 'cascade' }),
   token: text("token").notNull().unique(),
@@ -418,7 +418,7 @@ export type InsertStudentAccessToken = z.infer<typeof insertStudentAccessTokenSc
 export type StudentAccessToken = typeof studentAccessTokens.$inferSelect;
 
 // ИИ чаты (ai_chats) — отдельные диалоги
-export const aiChats = pgTable("Replit_ai_chats", {
+export const aiChats = pgTable("Tvoy_vector_2_ai_chats", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   studentId: varchar("student_id").notNull().references(() => students.id, { onDelete: 'cascade' }),
   homeworkId: varchar("homework_id").references(() => homework.id, { onDelete: 'set null' }),
@@ -437,7 +437,7 @@ export type InsertAiChat = z.infer<typeof insertAiChatSchema>;
 export type AiChat = typeof aiChats.$inferSelect;
 
 // ИИ чат-сообщения (ai_chat_messages)
-export const aiChatMessages = pgTable("Replit_ai_chat_messages", {
+export const aiChatMessages = pgTable("Tvoy_vector_2_ai_chat_messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   chatId: varchar("chat_id").references(() => aiChats.id, { onDelete: 'cascade' }),
   studentId: varchar("student_id").notNull().references(() => students.id, { onDelete: 'cascade' }),
@@ -457,7 +457,7 @@ export type InsertAiChatMessage = z.infer<typeof insertAiChatMessageSchema>;
 export type AiChatMessage = typeof aiChatMessages.$inferSelect;
 
 // ИИ чаты репетитора (tutor_ai_chats)
-export const tutorAiChats = pgTable("Replit_tutor_ai_chats", {
+export const tutorAiChats = pgTable("Tvoy_vector_2_tutor_ai_chats", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull().references(() => tutors.id, { onDelete: 'cascade' }),
   title: text("title").notNull().default("Новый чат"),
@@ -476,7 +476,7 @@ export type InsertTutorAiChat = z.infer<typeof insertTutorAiChatSchema>;
 export type TutorAiChat = typeof tutorAiChats.$inferSelect;
 
 // ИИ сообщения репетитора (tutor_ai_chat_messages)
-export const tutorAiChatMessages = pgTable("Replit_tutor_ai_chat_messages", {
+export const tutorAiChatMessages = pgTable("Tvoy_vector_2_tutor_ai_chat_messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   chatId: varchar("chat_id").notNull().references(() => tutorAiChats.id, { onDelete: 'cascade' }),
   tutorId: varchar("tutor_id").notNull().references(() => tutors.id, { onDelete: 'cascade' }),
@@ -495,7 +495,7 @@ export type InsertTutorAiChatMessage = z.infer<typeof insertTutorAiChatMessageSc
 export type TutorAiChatMessage = typeof tutorAiChatMessages.$inferSelect;
 
 // ИИ использование репетитора (tutor_ai_usage)
-export const tutorAiUsage = pgTable("Replit_tutor_ai_usage", {
+export const tutorAiUsage = pgTable("Tvoy_vector_2_tutor_ai_usage", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull().references(() => tutors.id, { onDelete: 'cascade' }),
   model: text("model").notNull(),
@@ -506,7 +506,7 @@ export const tutorAiUsage = pgTable("Replit_tutor_ai_usage", {
 export type TutorAiUsage = typeof tutorAiUsage.$inferSelect;
 
 // ИИ настройки (ai_settings) — глобальные настройки ИИ
-export const aiSettings = pgTable("Replit_ai_settings", {
+export const aiSettings = pgTable("Tvoy_vector_2_ai_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   key: text("key").notNull().unique(),
   value: text("value").notNull(),
@@ -516,7 +516,7 @@ export const aiSettings = pgTable("Replit_ai_settings", {
 export type AiSetting = typeof aiSettings.$inferSelect;
 
 // ИИ использование (ai_usage) — дневной учёт
-export const aiUsage = pgTable("Replit_ai_usage", {
+export const aiUsage = pgTable("Tvoy_vector_2_ai_usage", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   studentId: varchar("student_id").notNull().references(() => students.id, { onDelete: 'cascade' }),
   model: text("model").notNull(),
@@ -527,7 +527,7 @@ export const aiUsage = pgTable("Replit_ai_usage", {
 export type AiUsage = typeof aiUsage.$inferSelect;
 
 // ИИ пакеты (ai_packages) — докупленные пакеты запросов
-export const aiPackages = pgTable("Replit_ai_packages", {
+export const aiPackages = pgTable("Tvoy_vector_2_ai_packages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   ownerId: varchar("owner_id").notNull(),
   ownerType: text("owner_type").notNull(), // 'tutor' | 'student'
@@ -546,7 +546,7 @@ export type InsertAiPackage = z.infer<typeof insertAiPackageSchema>;
 export type AiPackage = typeof aiPackages.$inferSelect;
 
 // Шаблоны домашних заданий (homework_templates)
-export const homeworkTemplates = pgTable("Replit_homework_templates", {
+export const homeworkTemplates = pgTable("Tvoy_vector_2_homework_templates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull().references(() => tutors.id, { onDelete: 'cascade' }),
   title: text("title").notNull(),
@@ -562,7 +562,7 @@ export type InsertHomeworkTemplate = z.infer<typeof insertHomeworkTemplateSchema
 export type HomeworkTemplate = typeof homeworkTemplates.$inferSelect;
 
 // Тренажёры / Quiz-карточки (quizzes)
-export const quizzes = pgTable("Replit_quizzes", {
+export const quizzes = pgTable("Tvoy_vector_2_quizzes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull().references(() => tutors.id, { onDelete: 'cascade' }),
   // studentId = null → шаблон/общая тренировка для всех учеников репетитора
@@ -580,7 +580,7 @@ export type InsertQuiz = z.infer<typeof insertQuizSchema>;
 export type Quiz = typeof quizzes.$inferSelect;
 
 // Прохождения тренажёра (quiz_attempts)
-export const quizAttempts = pgTable("Replit_quiz_attempts", {
+export const quizAttempts = pgTable("Tvoy_vector_2_quiz_attempts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   quizId: varchar("quiz_id").notNull().references(() => quizzes.id, { onDelete: 'cascade' }),
   studentId: varchar("student_id").notNull().references(() => students.id, { onDelete: 'cascade' }),
@@ -599,7 +599,7 @@ export type InsertQuizAttempt = z.infer<typeof insertQuizAttemptSchema>;
 export type QuizAttempt = typeof quizAttempts.$inferSelect;
 
 // Личные заметки ученика (student_notes)
-export const studentNotes = pgTable("Replit_student_notes", {
+export const studentNotes = pgTable("Tvoy_vector_2_student_notes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   studentId: varchar("student_id").notNull().references(() => students.id, { onDelete: 'cascade' }),
   content: text("content").notNull().default(""),
@@ -612,7 +612,7 @@ export type InsertStudentNote = z.infer<typeof insertStudentNoteSchema>;
 export type StudentNote = typeof studentNotes.$inferSelect;
 
 // Прямые сообщения репетитор ↔ ученик (direct_messages)
-export const directMessages = pgTable("Replit_direct_messages", {
+export const directMessages = pgTable("Tvoy_vector_2_direct_messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull().references(() => tutors.id, { onDelete: 'cascade' }),
   studentId: varchar("student_id").notNull().references(() => students.id, { onDelete: 'cascade' }),
@@ -627,7 +627,7 @@ export type InsertDirectMessage = z.infer<typeof insertDirectMessageSchema>;
 export type DirectMessage = typeof directMessages.$inferSelect;
 
 // BBB Конференции (conferences)
-export const conferences = pgTable("Replit_conferences", {
+export const conferences = pgTable("Tvoy_vector_2_conferences", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull().references(() => tutors.id, { onDelete: 'cascade' }),
   studentId: varchar("student_id").references(() => students.id, { onDelete: 'set null' }),
@@ -644,7 +644,7 @@ export type InsertConference = z.infer<typeof insertConferenceSchema>;
 export type Conference = typeof conferences.$inferSelect;
 
 // Записи уроков с расшифровкой и конспектом (lesson_recordings)
-export const lessonRecordings = pgTable("Replit_lesson_recordings", {
+export const lessonRecordings = pgTable("Tvoy_vector_2_lesson_recordings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull().references(() => tutors.id, { onDelete: 'cascade' }),
   studentId: varchar("student_id").references(() => students.id, { onDelete: 'set null' }),
@@ -670,7 +670,7 @@ export type InsertLessonRecording = z.infer<typeof insertLessonRecordingSchema>;
 export type LessonRecording = typeof lessonRecordings.$inferSelect;
 
 // Фичер-флаги (feature_flags) — включить/выключить функции для конкретного репетитора
-export const featureFlags = pgTable("Replit_feature_flags", {
+export const featureFlags = pgTable("Tvoy_vector_2_feature_flags", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull().references(() => tutors.id, { onDelete: 'cascade' }),
   feature: text("feature").notNull(), // e.g. 'ai_chat', 'bbb', 'finance', 'boards', 'yookassa'
@@ -683,7 +683,7 @@ export type InsertFeatureFlag = z.infer<typeof insertFeatureFlagSchema>;
 export type FeatureFlag = typeof featureFlags.$inferSelect;
 
 // Тикеты поддержки (support_tickets)
-export const supportTickets = pgTable("Replit_support_tickets", {
+export const supportTickets = pgTable("Tvoy_vector_2_support_tickets", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull().references(() => tutors.id, { onDelete: 'cascade' }),
   subject: text("subject").notNull(),
@@ -698,7 +698,7 @@ export type SupportTicket = typeof supportTickets.$inferSelect;
 
 // ===== TASK BANK =====
 // Варианты заданий репетитора
-export const taskVariants = pgTable("Replit_task_variants", {
+export const taskVariants = pgTable("Tvoy_vector_2_task_variants", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull(),
   name: text("name").notNull(),
@@ -710,7 +710,7 @@ export type InsertTaskVariant = z.infer<typeof insertTaskVariantSchema>;
 export type TaskVariant = typeof taskVariants.$inferSelect;
 
 // Назначение вариантов ученикам
-export const variantAssignments = pgTable("Replit_variant_assignments", {
+export const variantAssignments = pgTable("Tvoy_vector_2_variant_assignments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   variantId: varchar("variant_id").notNull(),
   studentId: varchar("student_id").notNull(),
@@ -723,7 +723,7 @@ export type InsertVariantAssignment = z.infer<typeof insertVariantAssignmentSche
 export type VariantAssignment = typeof variantAssignments.$inferSelect;
 
 // Сохранённые планы уроков (saved_lesson_plans)
-export const savedLessonPlans = pgTable("Replit_saved_lesson_plans", {
+export const savedLessonPlans = pgTable("Tvoy_vector_2_saved_lesson_plans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull(),
   title: text("title").notNull(),
@@ -740,7 +740,7 @@ export type InsertSavedLessonPlan = z.infer<typeof insertSavedLessonPlanSchema>;
 export type SavedLessonPlan = typeof savedLessonPlans.$inferSelect;
 
 // Резервные копии данных репетитора (backups)
-export const backups = pgTable("Replit_backups", {
+export const backups = pgTable("Tvoy_vector_2_backups", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   tutorId: varchar("tutor_id").notNull().references(() => tutors.id, { onDelete: 'cascade' }),
   type: text("type").notNull().default('manual'), // 'auto' | 'manual'
@@ -753,7 +753,7 @@ export const backups = pgTable("Replit_backups", {
 export type Backup = typeof backups.$inferSelect;
 
 // Сообщения тикетов поддержки (support_messages)
-export const supportMessages = pgTable("Replit_support_messages", {
+export const supportMessages = pgTable("Tvoy_vector_2_support_messages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   ticketId: varchar("ticket_id").notNull().references(() => supportTickets.id, { onDelete: 'cascade' }),
   role: text("role").notNull(), // 'tutor' | 'admin'
@@ -766,7 +766,7 @@ export type InsertSupportMessage = z.infer<typeof insertSupportMessageSchema>;
 export type SupportMessage = typeof supportMessages.$inferSelect;
 
 // ────────── Промокоды (promo_codes) ──────────
-export const promoCodes = pgTable("Replit_promo_codes", {
+export const promoCodes = pgTable("Tvoy_vector_2_promo_codes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   code: text("code").notNull().unique(),
   description: text("description"),
@@ -790,7 +790,7 @@ export const insertPromoCodeSchema = createInsertSchema(promoCodes).omit({
 export type InsertPromoCode = z.infer<typeof insertPromoCodeSchema>;
 export type PromoCode = typeof promoCodes.$inferSelect;
 
-export const promoCodeRedemptions = pgTable("Replit_promo_code_redemptions", {
+export const promoCodeRedemptions = pgTable("Tvoy_vector_2_promo_code_redemptions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   promoCodeId: varchar("promo_code_id").notNull(),
   userId: varchar("user_id").notNull(),
