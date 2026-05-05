@@ -1,5 +1,6 @@
 import { sendAdminAlert } from './admin-alerts';
 import { validatePromoForScope, calculatePromoDiscountKop, type PromoValidationReason } from "./promo-pricing";
+import { findAiPackageOption } from "./ai-packages-pricing";
 import type { Express } from "express";
 import type { Server } from "http";
 import { randomUUID } from "crypto";
@@ -7,7 +8,7 @@ import { storage } from "./storage";
 import { hashPassword, verifyPassword, requireAuth, requireAdmin, requireEmailVerified } from "./auth";
 import { z } from "zod";
 import { botManager } from "./telegram-bot";
-import { AI_PACKAGE_OPTIONS, SUBSCRIPTION_LIMITS, EXTRA_STUDENT_PACKAGES } from "../shared/schema";
+import { SUBSCRIPTION_LIMITS, EXTRA_STUDENT_PACKAGES } from "../shared/schema";
 import YooKassa from "yookassa";
 import nodemailer from "nodemailer";
 import OpenAI, { toFile } from "openai";
@@ -2100,7 +2101,7 @@ A: Кнопка ⇄ рядом с занятием → выбрать новое
       if (!parsed.success) return res.status(400).json({ error: "Неверные данные" });
       const { credits, pricePaid, promoCode } = parsed.data;
 
-      const validOption = AI_PACKAGE_OPTIONS.find(o => o.credits === credits && o.price === pricePaid);
+      const validOption = findAiPackageOption(credits, pricePaid);
       if (!validOption) return res.status(400).json({ error: "Недопустимый пакет" });
 
       if (!process.env.YOOKASSA_SHOP_ID || !process.env.YOOKASSA_SECRET_KEY) {
@@ -3165,7 +3166,7 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
           // Используем ORIGINAL price для поиска в каталоге (pricePaid может быть со скидкой)
           const originalPrice = parseFloat(meta.originalPrice || meta.pricePaid || "0");
           const pricePaidNum = parseFloat(meta.pricePaid || "0");
-          const validOption = AI_PACKAGE_OPTIONS.find(o => o.credits === credits && o.price === originalPrice);
+          const validOption = findAiPackageOption(credits, originalPrice);
           if (validOption) {
             await storage.purchaseAiPackage(meta.tutorId, 'tutor', validOption.credits, pricePaidNum);
             // Записать редемпцию промокода (если был применён)
