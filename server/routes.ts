@@ -6929,7 +6929,7 @@ ${tutor.name}`;
       if (!r || r.tutorId !== req.session.tutorId) return res.status(404).json({ error: "Не найдено" });
       await storage.deleteLessonRecording(r.id);
       // best-effort удалить аудиофайл
-      if (r.audioPath) { try { const fs = await import("fs/promises"); await fs.unlink(r.audioPath); } catch {} }
+      if (r.audioPath) { try { const { deleteAudioFile } = await import("./recordings"); await deleteAudioFile(r.audioPath); } catch {} }
       res.json({ ok: true });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });

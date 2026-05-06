@@ -298,6 +298,7 @@ app.post("/api/upload", upload.array("files", 10), async (req, res) => {
   try { await ensureStudentAuthColumns(); } catch (e) { console.error("[migrate] student_auth:", e); }
   try { await ensurePromoCodesTable(); } catch (e) { console.error("[migrate] promo_codes:", e); }
   try { await ensureForeignKeys(); } catch (e) { console.error("[migrate] foreign_keys:", e); }
+  try { const { ensureRecordingsBucket } = await import("./recordings"); await ensureRecordingsBucket(); } catch (e: any) { logger.error({ err: e }, "[migrate] recordings_bucket"); }
 
   await seedDemoAccountIfNotExists();
   registerStudentRoutes(app);

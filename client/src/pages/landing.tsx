@@ -810,7 +810,7 @@ export default function LandingPage() {
             </div>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Shield className="h-3 w-3" />
-              © 2025 Твой Вектор
+              © {new Date().getFullYear()} Твой Вектор
             </div>
           </div>
         </div>

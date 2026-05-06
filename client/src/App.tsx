@@ -14,6 +14,7 @@ import ForgotPassword from "./pages/forgot-password";
 import ResetPassword from "./pages/reset-password";
 import AdminPage from "./pages/admin";
 import SubscriptionPage from "./pages/subscription";
+import SubscriptionSuccessPage from "./pages/subscription-success";
 import TutorPublic from "./pages/tutor-public";
 import StudentsPage from "./pages/students";
 import FinancePage from "./pages/finance";
@@ -131,6 +132,7 @@ function Router() {
       <Route path="/parent-chat">{() => <PublicRoute component={ParentChatPage} />}</Route>
       <Route path="/parent/payments">{() => <PublicRoute component={ParentPaymentsPage} />}</Route>
       <Route path="/admin">{() => <ProtectedRoute component={AdminPage} />}</Route>
+      <Route path="/subscription/success">{() => <PublicRoute component={SubscriptionSuccessPage} />}</Route>
       <Route path="/subscription">{() => <ProtectedRoute component={SubscriptionPage} />}</Route>
       <Route path="/students">{() => <ProtectedRoute component={StudentsPage} />}</Route>
       <Route path="/finance">{() => <ProtectedRoute component={FinancePage} />}</Route>

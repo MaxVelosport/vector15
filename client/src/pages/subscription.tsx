@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { usePaymentResult } from "@/hooks/use-payment-result";
 import { CalendarDays, Check, Crown, Diamond, Info, Minus, Package, Plus, ShoppingCart, Sparkles, Users, Zap, XCircle, FileText, Shield, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +30,16 @@ export default function SubscriptionPage() {
   useDocumentTitle("Подписка");
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  usePaymentResult({
+    param: "purchase",
+    successMessage: "Подписка оформлена! Активация займёт несколько минут. Мы пришлём уведомление по email и в Telegram.",
+    failMessage: "Оплата не прошла. Попробуйте ещё раз или используйте другую карту.",
+    successAction: () => {
+      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/ai-packages/balance"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/student-slots"] });
+    },
+  });
   const activateDemoMutation = useActivateDemoSubscription();
   const [showAiPackageDialog, setShowAiPackageDialog] = useState(false);
   const [showExtraStudentsDialog, setShowExtraStudentsDialog] = useState(false);

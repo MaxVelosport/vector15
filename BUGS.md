@@ -82,20 +82,24 @@
 - **Проблема:** клиенты с пустым Origin (некоторые расширения, прокси, mobile-WebView) получат 403 в prod. В dev — пропускаются.
 - **Что делать:** мониторить 403 на `/api/*`. Если жалобы — добавить fallback на CSRF-токен через double-submit cookie.
 
-### W-7. Локальные `uploads/` через multer
-- **Где:** `server/index.ts:240-271` — `/api/upload` уже использует Supabase Storage, но другие места (если есть) могут писать на диск.
-- **Проблема:** при смене сервера или multi-instance состояние теряется/расходится.
-- **Что делать:** найти все вызовы `multer({ storage: multer.diskStorage … })` и перевести на Supabase Storage. Запросом — найти места.
+### ✅ W-7. Локальные `uploads/` через multer — ЗАКРЫТО 2026-05-06
+
+`/api/upload` уже использовал Supabase Storage (bucket `uploads`). Аудиозаписи уроков (`/api/recordings/upload`) переведены на приватный bucket `lesson-recordings`. Новая функция `ensureRecordingsBucket()` создаёт bucket идемпотентно при старте. `saveAudioBuffer` / `runPipeline` / `deleteAudioFile` полностью на Supabase Storage с обработкой ошибок, pino-логированием и `sendAdminAlert` при upload failure. На диске было 0 файлов — миграция данных не требовалась.
+
+### W-14. `/subscription/success` polling не обнаруживает продление подписки
+- **Где:** `client/src/pages/subscription-success.tsx` — polling сравнивает `data.subscription` с начальным значением.
+- **Проблема:** при продлении существующей подписки (Pro → Pro на новый период) поле `subscription` не меняется. Polling прогоняет все 10 попыток и уходит в `timeout`-состояние, хотя оплата прошла успешно.
+- **Что делать:** сравнивать также `subscriptionUntil` (дата истечения подписки, возвращается `/api/auth/me`). Если дата сдвинулась — считать это успехом. Или сравнивать `providerSubscriptionId` (если он есть в ответе).
+- **Приоритет:** 🟢 косметика — критично только для клиентов на продлении, первые клиенты (новые подписчики) не затронуты.
 
 ### W-8. Allowlist в `script/build.ts` — хрупкий
 - **Где:** `script/build.ts:7-33`.
 - **Проблема:** при добавлении новой зависимости, которая нужна в бандле, а её нет в allowlist — esbuild сделает `external`, и в prod-старте будет `MODULE_NOT_FOUND`. Ловится только на запуске `dist/index.cjs`.
 - **Что делать:** в `package.json` добавить script `build:smoke` — `npm run build && node dist/index.cjs --check` или хотя бы `node -e "require('./dist/index.cjs')"`.
 
-### W-9. Нет HTTPS на текущем nginx-конфиге
-- **Где:** `nginx.tvoyvector.conf` слушает только `:80`.
-- **Проблема:** перед переключением DNS на Beget нужно настроить SSL (Let's Encrypt), иначе либо downgrade, либо браузеры заблокируют куки `secure: auto`.
-- **Что делать:** см. ROADMAP.md → этап «Production deploy».
+### ✅ W-9. Нет HTTPS на текущем nginx-конфиге — ЗАКРЫТО
+
+HTTPS работает на production `tvoyvector.ru` через Let's Encrypt (certbot.timer активен, сертификат обновляется автоматически). nginx слушает `:443` с SSL, куки `secure: auto` работают корректно. Закрыто фактически при переезде на Beget, подтверждено 2026-05-03.
 
 ### ✅ W-10a. `npm run check` падает с type-errors — ИСПРАВЛЕНО 2026-05-03
 - **Было:** 18 ошибок в 11 файлах.
@@ -118,9 +122,9 @@
 - **Проблема:** при смене Node-версии или сборке на сервере без `build-essential` `npm install` падает с node-gyp ошибкой.
 - **Что делать:** при первоначальной настройке Beget убедиться, что `apt-get install build-essential python3` сделано. Альтернатива — заменить на `bcryptjs` (медленнее, но JS).
 
-### W-11. Webhook ЮKassa — идемпотентность есть, но нужен мониторинг
-- **Где:** `Tvoy_vector_2_processed_webhook_events`, обработчик в `server/routes.ts` (искать по `payments/webhook`).
-- **Проблема:** при отказе на этапе записи в `processed_webhook_events` (race, partial commit) можно зачислить дважды. Текущая реализация защищает большинство сценариев, но не 100%.
+### ✅ W-11. Webhook ЮKassa — мониторинг добавлен — ЗАКРЫТО 2026-05-04
+
+Дублирующий webhook теперь отправляет `sendAdminAlert('critical', ...)` в Telegram-чат администратора. Идемпотентность через `Tvoy_vector_2_processed_webhook_events` закрывает большинство сценариев двойного зачисления. Race condition при partial commit — теоретический риск, мониторится через алерты. Достаточно для текущего масштаба (единицы транзакций/день).
 - **Что делать:** алерт в Telegram при появлении дубля (если PRIMARY KEY conflict случается часто — это сигнал).
 
 ### ✅ W-12. Excalidraw collaborators — ЗАКРЫТО 2026-05-03

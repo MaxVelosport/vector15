@@ -1,11 +1,12 @@
 import OpenAI, { toFile } from "openai";
-import fs from "fs/promises";
-import path from "path";
 import { storage } from "./storage";
 import { openaiKey } from "./builtin-config";
 import { getBbbRecordings } from "./bbb";
+import { supabase } from "./supabase";
+import { logger } from "./logger";
+import { sendAdminAlert } from "./admin-alerts";
 
-const RECORDINGS_DIR = path.join(process.cwd(), ".local", "recordings");
+const BUCKET = "lesson-recordings";
 
 let _client: OpenAI | null = null;
 function client(): OpenAI {
@@ -13,17 +14,38 @@ function client(): OpenAI {
   return _client;
 }
 
-export async function ensureRecordingsDir(): Promise<string> {
-  await fs.mkdir(RECORDINGS_DIR, { recursive: true });
-  return RECORDINGS_DIR;
+export async function ensureRecordingsBucket(): Promise<void> {
+  const { error } = await supabase.storage.createBucket(BUCKET, { public: false });
+  if (error && !error.message.includes("already exists")) {
+    logger.error({ err: error }, "[recordings] ensureRecordingsBucket failed");
+    throw new Error(error.message);
+  }
+  logger.info("[recordings] bucket '%s' ready", BUCKET);
 }
 
 export async function saveAudioBuffer(recordingId: string, buf: Buffer, ext = "mp3"): Promise<string> {
-  await ensureRecordingsDir();
   const safeExt = (ext.replace(/[^a-z0-9]/gi, "") || "mp3").toLowerCase();
-  const filePath = path.join(RECORDINGS_DIR, `${recordingId}.${safeExt}`);
-  await fs.writeFile(filePath, buf);
-  return filePath;
+  const key = `${recordingId}.${safeExt}`;
+  const { error } = await supabase.storage.from(BUCKET).upload(key, buf, {
+    contentType: `audio/${safeExt}`,
+    upsert: true,
+  });
+  if (error) {
+    logger.error({ err: error, recordingId }, "[recordings] upload to storage failed");
+    await sendAdminAlert("critical", "Ошибка загрузки аудио урока", {
+      errorMessage: error.message,
+      userId: recordingId,
+    }).catch(() => null);
+    throw new Error(`Не удалось сохранить аудио: ${error.message}`);
+  }
+  return key;
+}
+
+export async function deleteAudioFile(key: string): Promise<void> {
+  const { error } = await supabase.storage.from(BUCKET).remove([key]);
+  if (error) {
+    logger.warn({ err: error, key }, "[recordings] failed to delete audio from storage");
+  }
 }
 
 /**
@@ -61,8 +83,12 @@ async function runPipeline(recordingId: string): Promise<void> {
 
     // 1. Whisper
     await storage.updateLessonRecording(recordingId, { status: "transcribing" } as any);
-    const fileBuf = await fs.readFile(rec.audioPath);
-    const fileName = path.basename(rec.audioPath);
+    const { data: audioBlob, error: dlErr } = await supabase.storage.from(BUCKET).download(rec.audioPath);
+    if (dlErr || !audioBlob) {
+      throw new Error(`Не удалось скачать аудио: ${dlErr?.message ?? "no data"}`);
+    }
+    const fileBuf = Buffer.from(await audioBlob.arrayBuffer());
+    const fileName = rec.audioPath;
     const ai = client();
     const tr = await ai.audio.transcriptions.create({
       file: await toFile(fileBuf, fileName),

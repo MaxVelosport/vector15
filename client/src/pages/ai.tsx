@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { usePaymentResult } from "@/hooks/use-payment-result";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { PageTabs } from "@/components/page-tabs";
@@ -204,6 +205,12 @@ export default function AIPage() {
   useDocumentTitle("ИИ-помощник");
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  usePaymentResult({
+    param: "purchase",
+    successMessage: "AI-пакет оплачен! Кредиты будут зачислены в течение нескольких секунд.",
+    failMessage: "Оплата не прошла. Попробуйте ещё раз или используйте другую карту.",
+    successAction: () => queryClient.invalidateQueries({ queryKey: ["tutor-ai-config"] }),
+  });
   const { data: studentsData } = useStudents();
   const students = useMemo(() => studentsData ?? [], [studentsData]);
   const activeStudents = students.filter((s) => s.isActive);

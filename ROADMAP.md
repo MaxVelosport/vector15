@@ -66,6 +66,16 @@
 
 **Цель:** сделать кодбазу обозримой, чтобы Code Review занимал минуты, а не часы.
 
+### ✅ Блокеры выхода на рынок — ЗАКРЫТЫ 2026-05-06
+
+Отдельный трек (вне основного плана Этапа 3), приоритизирован перед декомпозицией.
+
+- ✅ `/subscription/success` — страница с polling `/api/auth/me` и авто-редиректом при активации подписки (закрывает 404 после оплаты)
+- ✅ `usePaymentResult` — переиспользуемый хук, подключён на `/ai`, `/subscription`, `/finance` (toast + invalidation кэша при возврате с ЮKassa)
+- ✅ Аудиозаписи уроков → приватный Supabase Storage bucket `lesson-recordings` (закрывает W-7)
+- ✅ Copyright год динамический (`new Date().getFullYear()`)
+- ✅ Демо-кредентиалы — уже были скрыты в production через `import.meta.env.DEV`
+
 ### Тесты-каркас (PRE-рефакторинг)
 - ⏳ Покрыть интеграционными тестами через supertest:
   - `auth/login`, `auth/register`, `auth/2fa`
@@ -146,3 +156,4 @@
 - **2026-05-04 (продолжение)** — структурное логирование через pino. `server/logger.ts` с redact, JSON в prod / pretty в dev. Request middleware с уровнями по статусу. Переведены: `server/index.ts`, `server/admin-alerts.ts`, `server/error-monitor.ts`. God-files отложены на Этап 3. Все 4 пункта Observability Части Б закрыты.
 - **2026-05-04 (продолжение)** — Telegram-алерты готовы. Модуль `server/admin-alerts.ts` с функцией `sendAdminAlert(level, title, context)`. Подключено к 3 источникам critical: HTTP 5xx (Express middleware), `uncaughtException`/`unhandledRejection` (process handlers), дубль ЮKassa webhook. Использует существующий `botManager.sendToChatId` через новый публичный метод. Тестовый алерт подтверждён получен в Telegram.
 - **2026-05-05** — Часть В Этапа 2 закрыта (CR-1 + W-3). DB-целостность: добавлена `ensureForeignKeys()` + `runSQLStrict()` в `seed-demo-auto.ts`; конверсия varchar→uuid для `lesson_recordings`, `quizzes`, `quiz_attempts`; `lesson_history.student_id/lesson_id` сделаны nullable; очищены 4 orphan-записи; добавлены 24 FK, итого 58 FK в Supabase. Все 37 `Replit_*` переименованы в `Tvoy_vector_2_*` в `shared/schema.ts`. **Этап 2 завершён полностью.**
+- **2026-05-06** — Продуктивная утренняя сессия (~5 часов). Цель: закрыть блокеры выхода на рынок. Закрыто 4 блокера: (1) `/subscription/success` страница с polling авторизации и активации подписки; (2) обработка возврата с ЮKassa на 3 страницах через переиспользуемый хук `usePaymentResult`; (3) recordings перенесены на приватный Supabase Storage bucket `lesson-recordings` с алертами при ошибках; (4) copyright теперь динамический. Production задеплоен, все проверки пройдены. Закрыто 3 бага (W-7, W-9, W-11), добавлен 1 (W-14 — edge case продления подписки). Демо-кредентиалы оказались уже защищены. Готовность к ручному тестированию платёжного флоу: высокая.

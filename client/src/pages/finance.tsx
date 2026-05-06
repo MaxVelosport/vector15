@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { usePaymentResult } from "@/hooks/use-payment-result";
 import { useLocation } from "wouter";
 import { format, formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
@@ -105,6 +106,12 @@ export default function FinancePage() {
   useDocumentTitle("Финансы");
   const [, setLocation] = useLocation();
   const { user } = useAuth();
+  usePaymentResult({
+    param: "payment",
+    successMessage: "Оплата прошла. Спасибо! Чек отправлен на email.",
+    failMessage: "Платёж не прошёл. Попробуйте ещё раз или свяжитесь с репетитором.",
+    successAction: () => invalidateResource("payments", "students"),
+  });
   const { data: studentsData, isLoading: studentsLoading } = useStudents();
   const { data: lessonsData, isLoading: lessonsLoading } = useLessons();
   const { data: paymentsData, isLoading: paymentsLoading } = usePayments();
