@@ -191,6 +191,48 @@ Pipeline промокодов реализован корректно полно
 
 ---
 
+## Финансовые баги — аудит 2026-05-14
+
+> Аудит охватывал: `server/routes.ts` (payments/lessons), `client/src/pages/finance.tsx`, `analytics.tsx`, `schedule.tsx`, `shared/schema.ts`. Найдено 13 проблем (5 high, 5 med, 3 low).
+
+### 🔴 Открытые — отложены до после гранта
+
+#### FA-2. `migrate-payments` создаёт дубли платежей
+- **Где:** `server/routes.ts:3291-3334` + `client/src/pages/finance.tsx` (useEffect на mount)
+- **Проблема:** Endpoint создаёт «авто-платёж» для каждого `attended`-занятия без тега `[lesson:ID]`. В нормальном потоке предоплат репетитор уже внёс наличные вручную (без тега) → миграция создаёт второй payment. Баланс раздувается; именно это было причиной расхождений в seed-скриптах.
+- **Plan:** Сравнивать не только `[lesson:ID]` в комментарии, но и суммарный totalPaid vs totalCost ДО создания платежа. Или перевести endpoint в admin-only с явным dry-run.
+
+#### FA-4. Race condition на `student.balance`
+- **Где:** `server/routes.ts:2602-2617`, `2928-2935`, `2826-2830`
+- **Проблема:** Паттерн read-modify-write: `getStudent` → вычислить новый баланс → `updateStudent`. Не атомарно. При параллельных PATCH (две вкладки, бот + UI) одно обновление теряется.
+- **Plan:** Supabase не поддерживает `SELECT ... FOR UPDATE` через JS SDK напрямую. Варианты: (a) DB function с `UPDATE ... SET balance = balance ± delta WHERE id = $1` через `rpc()`, (b) оптимистичный retry с чтением свежего баланса.
+
+### 🟡 Открытые — medium priority
+
+#### FA-7. Три разных `isBillable` в кодовой базе
+- **Где:** `server/routes.ts:2795-2798` (computeEffectiveBalance), `client/src/pages/finance.tsx:263-265`, `client/src/pages/schedule.tsx:273-275`, `client/src/pages/analytics.tsx` (своя inline)
+- **Проблема:** Finance включает `attended_unpaid` в billable-стоимость; schedule и старый вариант analytics — нет. Пользователь видит разные суммы «заработано» и «баланс» в зависимости от страницы.
+- **Plan:** Вынести единую `calcBillableLessonCost(lesson, pricePerLesson)` + `isLessonBillable(lesson)` в `shared/` или `client/src/lib/finance-utils.ts`. Это затронет 4+ файла — делать отдельным PR.
+
+---
+
+### ✅ Закрытые в сессии 2026-05-14
+
+| # | Bug | Commit | Описание |
+|---|-----|--------|---------|
+| 5 | Webhook без autoUpgrade | `74be7ef` | После ЮКасса-оплаты студента `autoUpgradeUnpaidLessons` не вызывался |
+| 6 | Off-by-one autoUpgrade | `6f5f458` | `effectiveBal <= 0` → `< 0`; при точном покрытии долга апгрейд пропускался |
+| 11 | Dead code deductFromBalance | `e1f280c` | Параметр деструктурировался из body, но нигде не использовался |
+| 1 | missed_paid по полной цене | `097b581` | `cancelled+missed_paid` считался по `pricePerLesson`, не по `cancelAmount` |
+| 3 | Переход paid→paid: нет коррекции | `cbcebe3` | При смене `attended` → `missed_paid` баланс не пересчитывался |
+| 8 | set-balance дублировал формулу | `f1ee6af` | Inline-расчёт в `/set-balance` заменён на `computeEffectiveBalance` |
+| 9 | missed_free вне Zod + фильтра | `61a9641` | `missed_free` не было в schema; занятия при архивации исчезали из статистики |
+| 10 | Analytics читал s.balance | `0505f04` | Должники/переплата теперь через `effectiveBalance` (согласовано с finance) |
+| 12 | Отрицательные платежи | `de2e3b9` | `amount: z.number()` → `z.number().min(1)` |
+| 13 | migrate-payments при каждом mount | `bdf3d41` | `useRef` → `localStorage`-флаг, запускается один раз за всё время |
+
+---
+
 ## ✅ Закрытые вопросы (ответы владельца 2026-05-03)
 
 1. **`n8n-telegram-bot-workflow.json`** — не используется в этом проекте. Артефакт прошлого. См. C-9.
