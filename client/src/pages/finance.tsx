@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { exportFinanceToExcel } from "@/lib/export-excel";
 import { DashboardLayout } from "@/components/dashboard-layout";
+import { EmptyState } from "@/components/empty-state";
 import { PageHero } from "@/components/page-hero";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -727,6 +728,15 @@ export default function FinancePage() {
           </Card>
         </div>
 
+        {payments.length === 0 && lessons.length === 0 ? (
+          <EmptyState
+            icon={CircleDollarSign}
+            title="Финансы пусты"
+            description="Когда вы проведёте первые занятия и получите платежи — они отобразятся здесь со статистикой и графиками"
+            actionLabel="Запланировать занятие"
+            onAction={() => setLocation("/schedule")}
+          />
+        ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
           <div className="lg:col-span-3 space-y-6">
             {/* ─── STUDENT BALANCES WITH EXPANDABLE UNPAID LESSONS ─── */}
@@ -1599,6 +1609,7 @@ export default function FinancePage() {
             </Card>
           </div>
         </div>
+        )}
       </div>
 
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>

@@ -68,6 +68,7 @@ import { useStudents, useLessons, usePayments, useCreateStudent, useUpdateStuden
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { invalidateResource } from "@/lib/queryClient";
 import { StudentsImportDialog } from "@/components/students-import-dialog";
+import { EmptyState } from "@/components/empty-state";
 import { Upload } from "lucide-react";
 import type { Student } from "@shared/schema";
 
@@ -1350,10 +1351,21 @@ export default function StudentsPage() {
                 ))}
               </AnimatePresence>
               {displayedStudents.length === 0 && (
-                <div className="py-12 text-center text-muted-foreground">
-                  <User className="mx-auto h-12 w-12 opacity-30" />
-                  <div className="mt-3 text-sm">{showArchived ? "Архив пуст" : "Нет активных учеников"}</div>
-                </div>
+                showArchived ? (
+                  <div className="py-12 text-center text-muted-foreground">
+                    <User className="mx-auto h-12 w-12 opacity-30" />
+                    <div className="mt-3 text-sm">Архив пуст</div>
+                  </div>
+                ) : (
+                  <EmptyState
+                    icon={Users}
+                    title="Здесь пока пусто"
+                    description="Добавьте первого ученика чтобы начать вести расписание и принимать оплаты"
+                    actionLabel="Добавить ученика"
+                    onAction={() => setShowAddStudentDialog(true)}
+                    className="my-4 mx-2"
+                  />
+                )
               )}
             </div>
           </CardContent>

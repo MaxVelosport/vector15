@@ -22,6 +22,7 @@ import {
   Users,
 } from "lucide-react";
 import { ExportDataModal } from "@/components/export-data-modal";
+import { EmptyState } from "@/components/empty-state";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { PageTabs } from "@/components/page-tabs";
 import { PageHero } from "@/components/page-hero";
@@ -716,15 +717,13 @@ export default function HomeworkPage() {
         )}
 
         {filtered.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted/50">
-              <FileText className="h-10 w-10 text-muted-foreground/50" />
-            </div>
-            <div className="mt-4 text-lg font-semibold">Нет домашних заданий</div>
-            <div className="mt-2 max-w-md text-sm text-muted-foreground">
-              Создайте первую домашку, нажав кнопку «Создать домашку»
-            </div>
-          </div>
+          <EmptyState
+            icon={FileText}
+            title="Нет домашних заданий"
+            description="Назначьте первое задание чтобы отслеживать выполнение и прогресс учеников"
+            actionLabel="Создать ДЗ"
+            onAction={() => setCreateOpen(true)}
+          />
         )}
       </div>
 

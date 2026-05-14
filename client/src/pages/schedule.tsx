@@ -33,6 +33,7 @@ import {
   X,
 } from "lucide-react";
 import { DashboardLayout } from "@/components/dashboard-layout";
+import { EmptyState } from "@/components/empty-state";
 import { PageHero } from "@/components/page-hero";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -849,7 +850,21 @@ export default function SchedulePage() {
               </div>
             </div>
 
-            {scheduleViewMode === "calendar" ? (
+            {lessons.length === 0 ? (
+              <EmptyState
+                icon={Calendar}
+                title="Расписание пусто"
+                description="Запланируйте первое занятие чтобы оно появилось в календаре"
+                actionLabel="Создать занятие"
+                onAction={() => {
+                  setScheduleStudentId(activeStudents[0]?.id || "");
+                  setScheduleTopic("");
+                  setScheduleWeekDays([]);
+                  setScheduleUnlimited(false);
+                  setShowScheduleDialog(true);
+                }}
+              />
+            ) : scheduleViewMode === "calendar" ? (
               <div>
                 <div className="flex items-center justify-center gap-3 mb-4">
                   <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setCalendarMonth((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))}>

@@ -1,13 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { 
-  BookOpen, 
-  Calendar, 
-  CircleDollarSign, 
-  GraduationCap, 
-  MessageSquare, 
-  Sparkles, 
-  Users 
+import {
+  BookOpen,
+  Calendar,
+  CircleDollarSign,
+  GraduationCap,
+  MessageSquare,
+  Sparkles,
+  Users,
+  type LucideIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { ReactNode } from "react";
@@ -76,6 +77,8 @@ const configs: Record<EmptyStateType, EmptyStateConfig> = {
 
 interface EmptyStateProps {
   type?: EmptyStateType;
+  /** Альтернатива type — передать иконку напрямую */
+  icon?: LucideIcon;
   title?: string;
   description?: string;
   action?: ReactNode;
@@ -86,6 +89,7 @@ interface EmptyStateProps {
 
 export function EmptyState({
   type = "default",
+  icon: IconProp,
   title,
   description,
   action,
@@ -94,7 +98,7 @@ export function EmptyState({
   className,
 }: EmptyStateProps) {
   const config = configs[type];
-  const Icon = config.icon;
+  const Icon = IconProp ?? config.icon;
   
   return (
     <motion.div
@@ -150,7 +154,11 @@ export function EmptyState({
             className="mt-6"
           >
             {action || (
-              <Button onClick={onAction} className="gap-2">
+              <Button
+                onClick={onAction}
+                size="lg"
+                className="gap-2 bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-700 hover:to-pink-700 text-white shadow-lg"
+              >
                 {actionLabel}
               </Button>
             )}
