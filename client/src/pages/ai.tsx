@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { fireFirstTimeAction } from "@/lib/confetti";
 import { usePaymentResult } from "@/hooks/use-payment-result";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/dashboard-layout";
@@ -331,6 +332,7 @@ export default function AIPage() {
       refetchMessages();
       refetchChats();
       queryClient.invalidateQueries({ queryKey: ["tutor-ai-config"] });
+      fireFirstTimeAction("ai-chat", "big");
     },
     onError: (error: Error) => {
       toast.error(error.message);

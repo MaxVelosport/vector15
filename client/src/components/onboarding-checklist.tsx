@@ -7,12 +7,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
+import { fireCelebration } from "@/lib/confetti";
 import type { Student, Lesson, Payment, Homework } from "@shared/schema";
 
 const DISMISS_KEY = "onboarding_checklist_dismissed";
 
 export function OnboardingChecklist() {
   const [dismissed, setDismissed] = useState(false);
+  const [celebrated, setCelebrated] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -83,6 +87,15 @@ export function OnboardingChecklist() {
   const doneCount = steps.filter(s => s.done).length;
   const allDone = doneCount === steps.length;
   const progress = (doneCount / steps.length) * 100;
+
+  useEffect(() => {
+    if (allDone && !celebrated && !localStorage.getItem("checklist-celebrated")) {
+      fireCelebration();
+      localStorage.setItem("checklist-celebrated", "1");
+      setCelebrated(true);
+      toast({ title: "🏆 Все настройки завершены!", description: "Отличная работа!" });
+    }
+  }, [allDone, celebrated, toast]);
 
   const handleDismiss = () => {
     localStorage.setItem(DISMISS_KEY, "1");

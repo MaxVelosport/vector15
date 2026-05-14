@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { fireCelebration } from "@/lib/confetti";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowRight, ArrowLeft, X, Users, Calendar, BookOpen,
@@ -651,7 +652,7 @@ export function OnboardingTour({ onComplete, isOpen, role = "tutor" }: Onboardin
 
   const handleNext = useCallback(() => {
     if (!isLastStep) { setDirection(1); setCurrentStep(s => s + 1); }
-    else onComplete();
+    else { fireCelebration(); onComplete(); }
   }, [isLastStep, onComplete]);
 
   const handlePrev = useCallback(() => {

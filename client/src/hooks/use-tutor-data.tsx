@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Student, Lesson, Payment, Task, Homework } from "@shared/schema";
 import { invalidateResource } from "@/lib/queryClient";
+import { fireFirstTimeAction } from "@/lib/confetti";
 
 // Students
 export function useStudents() {
@@ -32,6 +33,7 @@ export function useCreateStudent() {
     },
     onSuccess: () => {
       invalidateResource("students");
+      fireFirstTimeAction("student", "medium");
     },
   });
 }
@@ -164,6 +166,7 @@ export function useCreateLesson() {
     },
     onSuccess: () => {
       invalidateResource("lessons");
+      fireFirstTimeAction("lesson-created", "small");
     },
   });
 }
@@ -181,10 +184,13 @@ export function useUpdateLesson() {
       if (!res.ok) throw new Error("Failed to update lesson");
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       invalidateResource("lessons");
       invalidateResource("students");
       invalidateResource("payments");
+      if ((variables.updates as any).attendance === "attended") {
+        fireFirstTimeAction("lesson-completed", "medium");
+      }
     },
   });
 }
@@ -259,6 +265,7 @@ export function useCreatePayment() {
     onSuccess: () => {
       invalidateResource("payments");
       invalidateResource("students");
+      fireFirstTimeAction("payment", "medium");
     },
   });
 }
