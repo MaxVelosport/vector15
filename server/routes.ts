@@ -2797,6 +2797,10 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
         (l.status === "cancelled" && l.attendance === "missed_paid")
       )
       .reduce((sum, l) => {
+        // cancelled+missed_paid → только штраф cancelAmount, не полная цена урока
+        if (l.status === "cancelled" && l.attendance === "missed_paid") {
+          return sum + ((l as any).cancelAmount ?? 0);
+        }
         const dur = (l as any).durationMinutes || 60;
         return sum + Math.round(s.pricePerLesson * dur / 60);
       }, 0);

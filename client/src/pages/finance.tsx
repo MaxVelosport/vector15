@@ -271,6 +271,10 @@ export default function FinancePage() {
 
   const calcLessonCost = (lesson: any, student: any) => {
     if (!student) return 0;
+    // cancelled+missed_paid → только штраф за отмену, не полная цена урока
+    if (lesson.status === "cancelled" && lesson.attendance === "missed_paid") {
+      return lesson.cancelAmount ?? 0;
+    }
     const duration = lesson.durationMinutes || 60;
     return Math.round(student.pricePerLesson * duration / 60);
   };
