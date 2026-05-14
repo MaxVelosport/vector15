@@ -50,6 +50,7 @@ import StudentForgotPassword from "./pages/student-forgot-password";
 import StudentResetPassword from "./pages/student-reset-password";
 import StudentVerifyEmail from "./pages/student-verify-email";
 import { PageTransition } from "@/components/page-transition";
+import { OnboardingWelcome } from "@/components/onboarding-welcome";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -172,6 +173,7 @@ export default function App() {
             <ErrorBoundary variant="page">
               <Router />
             </ErrorBoundary>
+            <OnboardingWelcome />
           </TooltipProvider>
         </QueryClientProvider>
       </ThemeProvider>

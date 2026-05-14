@@ -852,6 +852,16 @@ export function useOnboarding(role: "tutor" | "student" = "tutor") {
     }
   }, [key]);
 
+  // Внешний триггер от Welcome-модалки
+  useEffect(() => {
+    const handler = () => {
+      localStorage.removeItem(key);
+      setShowOnboarding(true);
+    };
+    window.addEventListener("trigger-onboarding-tour", handler);
+    return () => window.removeEventListener("trigger-onboarding-tour", handler);
+  }, [key]);
+
   const completeOnboarding = () => {
     localStorage.setItem(key, "true");
     setShowOnboarding(false);

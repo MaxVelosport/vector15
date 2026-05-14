@@ -82,6 +82,13 @@ export function OnboardingWizard() {
     return () => clearTimeout(t);
   }, [tutor, tutorLoading, tutorError, students.length, studentsLoading, studentsError]);
 
+  // Внешний триггер от Welcome-модалки
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener("trigger-onboarding-wizard", handler);
+    return () => window.removeEventListener("trigger-onboarding-wizard", handler);
+  }, []);
+
   // Подставляем дефолтный предмет в первого ученика, как только он выбран
   useEffect(() => {
     if (subjects.length > 0 && !firstStudent.subject) {
