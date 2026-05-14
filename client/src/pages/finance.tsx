@@ -223,11 +223,14 @@ export default function FinancePage() {
     }
   };
 
-  const migrationRan = useRef(false);
   const queryClient = useQueryClient();
 
+  // Миграция запускается максимум один раз за всё время (ключ в localStorage).
+  // useRef сбрасывался при размонтировании компонента и вызывал лишние POST-запросы.
+  const MIGRATION_KEY = "finance-migration-v1-done";
   useEffect(() => {
-    if (migrationRan.current || lessonsLoading || paymentsLoading) return;
+    if (typeof window !== "undefined" && localStorage.getItem(MIGRATION_KEY)) return;
+    if (lessonsLoading || paymentsLoading) return;
     const attendedLessons = (lessonsData ?? []).filter(
       (l: any) => l.status === "completed" && l.attendance === "attended"
     );
@@ -235,14 +238,17 @@ export default function FinancePage() {
     const missingPayments = attendedLessons.filter(
       (l: any) => !paymentComments.some((c: string) => c.includes(`[lesson:${l.id}]`))
     );
-    if (missingPayments.length === 0) return;
-    migrationRan.current = true;
+    if (missingPayments.length === 0) {
+      localStorage.setItem(MIGRATION_KEY, "1");
+      return;
+    }
     fetch("/api/finance/migrate-payments", {
       method: "POST",
       credentials: "include",
     })
       .then(r => r.json())
       .then(data => {
+        localStorage.setItem(MIGRATION_KEY, "1");
         if (data.created > 0) {
           invalidateResource("payments");
           invalidateResource("students");
