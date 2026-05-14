@@ -7088,6 +7088,96 @@ ${tutor.name}`;
     }
   });
 
+  // ─── Онбординг: загрузка demo-данных ────────────────────────────────────────
+  app.post("/api/onboarding/load-demo", requireAuth, async (req, res) => {
+    const tutorId = req.session.tutorId!;
+    try {
+      const tutor = await storage.getTutor(tutorId);
+      if (tutor?.email === "demo@vector.ru") {
+        return res.status(400).json({ error: "Этот endpoint недоступен для основного demo-аккаунта" });
+      }
+
+      const existingStudents = await storage.getStudentsByTutorId(tutorId);
+      const existingLessons  = await storage.getLessonsByTutorId(tutorId);
+      if (existingStudents.length > 0 || existingLessons.length > 0) {
+        return res.status(400).json({
+          error: "Demo доступен только для пустых аккаунтов",
+          hasStudents: existingStudents.length,
+          hasLessons:  existingLessons.length,
+        });
+      }
+
+      const DEMO_STUDENTS = [
+        { name: "Алиса Иванова",    subject: "Математика",   grade: "11 класс", goal: "ЕГЭ профиль", pricePerLesson: 1800 },
+        { name: "Богдан Петров",    subject: "Физика",        grade: "11 класс", goal: "ЕГЭ",         pricePerLesson: 1800 },
+        { name: "Виктория Смирнова",subject: "Математика",   grade: "10 класс", goal: "Школа",        pricePerLesson: 1500 },
+        { name: "Григорий Соколов", subject: "Математика",   grade: "9 класс",  goal: "ОГЭ",          pricePerLesson: 1500 },
+        { name: "Дарья Кузнецова",  subject: "Информатика",  grade: "11 класс", goal: "ЕГЭ",          pricePerLesson: 2000 },
+      ] as const;
+
+      const TOPICS: Record<string, string[]> = {
+        "Физика":       ["Законы Ньютона",          "Закон Ома",                "Электростатика"],
+        "Информатика":  ["Алгоритмы сортировки",    "Структуры данных",         "Циклы и условия"],
+        "Математика":   ["Квадратные уравнения",    "Производная функции",      "Тригонометрия"],
+      };
+
+      const createdStudents: Awaited<ReturnType<typeof storage.createStudent>>[] = [];
+      for (const d of DEMO_STUDENTS) {
+        const s = await storage.createStudent({ ...d, tutorId, balance: 0, progress: 0, isActive: true });
+        createdStudents.push(s);
+      }
+
+      let lessonsCount = 0;
+      for (const student of createdStudents) {
+        const topics = TOPICS[student.subject] ?? TOPICS["Математика"];
+        for (let i = 0; i < 3; i++) {
+          const daysAgo = (3 - i) * 7;
+          await storage.createLesson({
+            tutorId,
+            studentId:       student.id,
+            scheduledAt:     new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000),
+            durationMinutes: 90,
+            topic:           topics[i],
+            status:          "completed",
+            attendance:      "attended",
+            notes:           `Урок по теме «${topics[i]}» прошёл успешно.`,
+            rating:          5,
+          });
+          lessonsCount++;
+        }
+        await storage.createLesson({
+          tutorId,
+          studentId:       student.id,
+          scheduledAt:     new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+          durationMinutes: 90,
+          topic:           "Следующее занятие",
+          status:          "pending",
+        });
+        lessonsCount++;
+      }
+
+      const METHODS = ["перевод", "СБП", "карта"];
+      let paymentsCount = 0;
+      for (const student of createdStudents) {
+        for (let i = 0; i < 2; i++) {
+          await storage.createPayment({
+            tutorId,
+            studentId: student.id,
+            amount:    student.pricePerLesson * (i === 0 ? 3 : 2),
+            method:    METHODS[i % METHODS.length],
+            comment:   "Демо-платёж",
+          });
+          paymentsCount++;
+        }
+      }
+
+      res.json({ success: true, created: { students: createdStudents.length, lessons: lessonsCount, payments: paymentsCount } });
+    } catch (error: any) {
+      console.error("[load-demo]", error);
+      res.status(500).json({ error: "Не удалось создать demo-данные: " + error.message });
+    }
+  });
+
   // Внутренняя функция: применить промокод после успешной оплаты (использовать из чекаута)
   // Экспортируем через app.locals для возможного reuse
   (app as any).locals.applyPromoCode = async (params: {

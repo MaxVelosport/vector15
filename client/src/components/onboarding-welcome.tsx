@@ -80,14 +80,23 @@ export function OnboardingWelcome() {
         method: "POST",
         credentials: "include",
       });
+      const body = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Ошибка при создании демо-данных");
+        const description = res.status === 400
+          ? (body.error ?? "У вас уже есть данные. Demo доступен только для новых аккаунтов.")
+          : "Не удалось загрузить demo. Попробуйте позже.";
+        toast({ title: "Демо недоступно", description, variant: "destructive" });
+        setLoadingDemo(false);
+        return;
       }
       markWelcomed();
-      window.location.reload();
-    } catch (e: any) {
-      toast({ title: "Ошибка", description: e.message, variant: "destructive" });
+      toast({
+        title: "✅ Demo-данные загружены!",
+        description: `Создано: ${body.created?.students} учеников, ${body.created?.lessons} занятий, ${body.created?.payments} платежей.`,
+      });
+      setTimeout(() => window.location.reload(), 800);
+    } catch {
+      toast({ title: "Ошибка", description: "Не удалось загрузить demo. Попробуйте позже.", variant: "destructive" });
       setLoadingDemo(false);
     }
   };
