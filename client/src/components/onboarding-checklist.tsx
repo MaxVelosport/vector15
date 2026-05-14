@@ -1,17 +1,49 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { CheckCircle2, Circle, X, Rocket, ArrowRight } from "lucide-react";
+import { CheckCircle2, Circle, X, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { fireCelebration } from "@/lib/confetti";
+import { cn } from "@/lib/utils";
 import type { Student, Lesson, Payment, Homework } from "@shared/schema";
 
 const DISMISS_KEY = "onboarding_checklist_dismissed";
+
+function CircularProgress({ value, allDone }: { value: number; allDone: boolean }) {
+  const radius = 26;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (value / 100) * circumference;
+
+  return (
+    <div className="relative w-16 h-16 shrink-0">
+      <svg className="w-full h-full -rotate-90" viewBox="0 0 64 64">
+        <circle cx="32" cy="32" r={radius} strokeWidth="5" fill="none"
+          className="text-muted-foreground/20" stroke="currentColor" />
+        <circle
+          cx="32" cy="32" r={radius} strokeWidth="5" fill="none"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          stroke="currentColor"
+          className={cn(
+            "transition-all duration-500",
+            allDone ? "text-amber-500" : "text-primary"
+          )}
+        />
+      </svg>
+      <div className={cn(
+        "absolute inset-0 flex items-center justify-center text-sm font-bold",
+        allDone && "animate-pulse"
+      )}>
+        {allDone ? "🏆" : `${Math.round(value)}%`}
+      </div>
+    </div>
+  );
+}
 
 export function OnboardingChecklist() {
   const [dismissed, setDismissed] = useState(false);
@@ -40,7 +72,6 @@ export function OnboardingChecklist() {
       desc: "Создайте карточку ученика с предметом и целью",
       done: students.length > 0,
       href: "/students",
-      cta: "Добавить",
     },
     {
       id: "lesson",
@@ -48,7 +79,6 @@ export function OnboardingChecklist() {
       desc: "Поставьте первый урок в расписание",
       done: lessons.length > 0,
       href: "/schedule",
-      cta: "В расписание",
     },
     {
       id: "homework",
@@ -56,7 +86,6 @@ export function OnboardingChecklist() {
       desc: "Выдайте ученику первое задание",
       done: homework.length > 0,
       href: "/homework",
-      cta: "К домашкам",
     },
     {
       id: "payment",
@@ -64,7 +93,6 @@ export function OnboardingChecklist() {
       desc: "Запишите первый платёж ученика",
       done: payments.length > 0,
       href: "/finance",
-      cta: "К финансам",
     },
     {
       id: "avatar",
@@ -72,15 +100,13 @@ export function OnboardingChecklist() {
       desc: "Это первое, что увидят ваши ученики",
       done: hasAvatar,
       href: "/profile",
-      cta: "Загрузить",
     },
     {
       id: "public",
       title: "Опубликуйте свою страницу",
-      desc: "Получите личную ссылку для новых учеников и отзывов",
+      desc: "Получите личную ссылку для новых учеников",
       done: hasPublicProfile,
       href: "/profile",
-      cta: "Настроить",
     },
   ], [students.length, lessons.length, payments.length, homework.length, hasAvatar, hasPublicProfile]);
 
@@ -97,12 +123,23 @@ export function OnboardingChecklist() {
     }
   }, [allDone, celebrated, toast]);
 
+  // Авто-скрытие через 3 сек после завершения
+  useEffect(() => {
+    if (allDone && celebrated) {
+      const timer = setTimeout(() => {
+        localStorage.setItem(DISMISS_KEY, "1");
+        setDismissed(true);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [allDone, celebrated]);
+
   const handleDismiss = () => {
     localStorage.setItem(DISMISS_KEY, "1");
     setDismissed(true);
   };
 
-  if (dismissed || allDone) return null;
+  if (dismissed) return null;
 
   return (
     <AnimatePresence>
@@ -112,21 +149,20 @@ export function OnboardingChecklist() {
         exit={{ opacity: 0, height: 0 }}
         data-testid="onboarding-checklist"
       >
-        <Card className="border-primary/30 bg-gradient-to-br from-primary/5 via-primary/[0.02] to-transparent">
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex items-start justify-between gap-3 mb-4">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
-                  <Rocket className="h-5 w-5 text-primary" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="font-semibold text-sm sm:text-base">
-                    Быстрый старт: {doneCount} из {steps.length}
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    Настройте платформу за 10 минут
-                  </p>
-                </div>
+        <Card className="border-primary/30 bg-gradient-to-br from-primary/5 via-primary/[0.02] to-transparent overflow-hidden">
+          <CardContent className="p-0">
+            {/* Шапка с круговым прогрессом */}
+            <div className="flex items-center gap-4 p-4 sm:p-5 border-b border-border/50">
+              <CircularProgress value={progress} allDone={allDone} />
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm sm:text-base">
+                  {allDone ? "🏆 Готово!" : "Прогресс настройки"}
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {allDone
+                    ? "Все шаги завершены!"
+                    : `${doneCount} из ${steps.length} шагов выполнено`}
+                </p>
               </div>
               <Button
                 variant="ghost"
@@ -140,33 +176,60 @@ export function OnboardingChecklist() {
               </Button>
             </div>
 
-            <Progress value={progress} className="h-1.5 mb-4" />
-
-            <div className="grid gap-2 sm:grid-cols-2">
+            {/* Список шагов */}
+            <div className="grid gap-1.5 sm:grid-cols-2 p-3 sm:p-4">
               {steps.map((step) => (
                 <Link
                   key={step.id}
                   href={step.href}
-                  className={`group flex items-center gap-3 rounded-lg border p-3 transition-all ${
+                  className={cn(
+                    "group flex items-center gap-3 rounded-lg border p-3 transition-colors duration-300",
                     step.done
                       ? "border-green-500/30 bg-green-500/5"
                       : "border-border hover:border-primary/40 hover:bg-muted/50"
-                  }`}
+                  )}
                   data-testid={`checklist-step-${step.id}`}
                 >
-                  {step.done ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
-                  ) : (
-                    <Circle className="h-5 w-5 text-muted-foreground shrink-0" />
-                  )}
+                  <motion.div
+                    initial={false}
+                    animate={step.done ? { scale: 1 } : { scale: 1 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                    className="shrink-0"
+                  >
+                    <AnimatePresence mode="wait" initial={false}>
+                      {step.done ? (
+                        <motion.div
+                          key="done"
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0, opacity: 0 }}
+                          transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                        >
+                          <CheckCircle2 className="h-5 w-5 text-green-500" />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="pending"
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0, opacity: 0 }}
+                        >
+                          <Circle className="h-5 w-5 text-muted-foreground" />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
                   <div className="flex-1 min-w-0">
-                    <div className={`text-sm font-medium ${step.done ? "line-through text-muted-foreground" : ""}`}>
+                    <div className={cn(
+                      "text-sm font-medium transition-all duration-300",
+                      step.done ? "line-through opacity-60" : ""
+                    )}>
                       {step.title}
                     </div>
                     <div className="text-xs text-muted-foreground truncate">{step.desc}</div>
                   </div>
                   {!step.done && (
-                    <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0" />
+                    <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary shrink-0 transition-colors" />
                   )}
                 </Link>
               ))}

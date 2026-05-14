@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Sparkles, GraduationCap, BookOpen, Clock, Users, Upload, Plus, Check, Rocket, Loader2 } from "lucide-react";
 import { fireCelebration } from "@/lib/confetti";
+import { cn } from "@/lib/utils";
 import { useStudents, useCreateStudent } from "@/hooks/use-tutor-data";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -157,14 +158,15 @@ export function OnboardingWizard() {
     <>
       <Dialog open={open} onOpenChange={(v) => { if (!v) finish(false); else setOpen(v); }}>
         <DialogContent className="max-w-2xl p-0 overflow-hidden border-0 shadow-2xl" data-testid="dialog-onboarding-wizard">
-          <div className="bg-gradient-to-br from-violet-600 via-fuchsia-600 to-pink-600 px-8 py-6 text-white relative overflow-hidden">
+          <div className="bg-gradient-to-br from-violet-600 via-fuchsia-600 to-pink-600 px-8 py-5 text-white relative overflow-hidden">
             <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
             <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-white/10 rounded-full blur-3xl" />
-            <div className="relative z-10 flex items-center justify-between">
+            {/* Заголовок и пропуск */}
+            <div className="relative z-10 flex items-center justify-between mb-3">
               <div>
                 <div className="flex items-center gap-2 text-xs font-medium opacity-80 mb-1">
                   <Sparkles className="h-3.5 w-3.5" />
-                  Шаг {step + 1} из {totalSteps}
+                  Шаг {step + 1} из {totalSteps} · {Math.round(progress)}%
                 </div>
                 <h2 className="text-2xl font-bold">
                   {step === 0 && "Добро пожаловать в Твой Вектор!"}
@@ -173,11 +175,33 @@ export function OnboardingWizard() {
                   {step === 3 && "Добавьте первого ученика"}
                 </h2>
               </div>
-              <button onClick={() => finish(false)} className="text-white/70 hover:text-white text-xs underline" data-testid="button-skip-wizard">
+              <button onClick={() => finish(false)} className="text-white/70 hover:text-white text-xs underline self-start" data-testid="button-skip-wizard">
                 Пропустить
               </button>
             </div>
-            <Progress value={progress} className="mt-4 h-1.5 bg-white/20" />
+            {/* Иконки шагов */}
+            <div className="relative z-10 flex items-center justify-center gap-0 mb-3">
+              {([GraduationCap, BookOpen, Clock, Users] as const).map((Icon, i) => (
+                <div key={i} className="flex items-center">
+                  <div className={cn(
+                    "w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300",
+                    i < step ? "bg-white/30 ring-2 ring-white/40" :
+                    i === step ? "bg-white shadow-lg" :
+                    "bg-white/10"
+                  )}>
+                    {i < step
+                      ? <Check className="h-3.5 w-3.5 text-white" />
+                      : <Icon className={cn("h-3.5 w-3.5", i === step ? "text-violet-600" : "text-white/50")} />
+                    }
+                  </div>
+                  {i < 3 && <div className="w-6 h-px bg-white/25" />}
+                </div>
+              ))}
+            </div>
+            {/* Прогресс-бар */}
+            <div className="relative z-10">
+              <Progress value={progress} className="h-1.5 bg-white/20" />
+            </div>
           </div>
 
           <div className="p-8 min-h-[340px]">
