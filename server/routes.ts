@@ -2985,19 +2985,9 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
         return res.status(400).json({ error: "Нельзя изменять баланс ученика в архиве" });
       }
 
-      const studentPayments = await storage.getPaymentsByStudentId(req.params.id);
-      const studentLessons = await storage.getLessonsByStudentId(req.params.id);
-
-      const totalPaid = studentPayments.reduce((sum, p) => sum + p.amount, 0);
-      const billableLessons = studentLessons.filter(l =>
-        (l.status === "completed" && ["attended", "attended_unpaid", "missed_paid"].includes(l.attendance || "")) ||
-        (l.status === "cancelled" && l.attendance === "missed_paid")
-      );
-      const totalLessonsCost = billableLessons.reduce((sum, l) => {
-        const duration = (l as any).durationMinutes || 60;
-        return sum + Math.round(student.pricePerLesson * duration / 60);
-      }, 0);
-      const effectiveBalance = totalPaid - totalLessonsCost;
+      // Переиспользуем computeEffectiveBalance — единственная точка расчёта баланса,
+      // включая корректную обработку cancelAmount для cancelled+missed_paid (фикс #1/#8).
+      const effectiveBalance = await computeEffectiveBalance(req.params.id, student);
       const delta = newBalance - effectiveBalance;
 
       if (delta === 0) {
