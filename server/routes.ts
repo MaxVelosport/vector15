@@ -2633,6 +2633,24 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
             });
           }
         }
+      } else if (nowPaid && wasPaid) {
+        // Оба состояния — paid, но стоимость могла измениться (например attended → missed_paid).
+        // Применяем разницу: возвращаем старую стоимость, списываем новую.
+        const student = await storage.getStudent(updated.studentId);
+        if (student && student.tutorId === req.session.tutorId) {
+          const oldCost = (oldLesson.status === "cancelled" && oldAttendance === "missed_paid")
+            ? ((oldLesson as any).cancelAmount ?? 0)
+            : Math.round(student.pricePerLesson * ((oldLesson as any).durationMinutes || 60) / 60);
+          const newCost = (newStatus === "cancelled" && newAttendance === "missed_paid")
+            ? ((updated as any).cancelAmount ?? 0)
+            : Math.round(student.pricePerLesson * ((updated as any).durationMinutes || 60) / 60);
+          const delta = newCost - oldCost;
+          if (delta !== 0) {
+            await storage.updateStudent(updated.studentId, {
+              balance: student.balance - delta,
+            });
+          }
+        }
       }
     }
 
