@@ -2810,7 +2810,10 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
     if (!student) return;
 
     const effectiveBal = await computeEffectiveBalance(studentId, student);
-    if (effectiveBal <= 0) return;
+    // effectiveBal = 0 означает точное покрытие долга (totalPaid == totalCost,
+    // где totalCost уже включает attended_unpaid). Прерываем только при реальном
+    // дефиците (< 0); при 0 даём функции попробовать — inner-проверки решат сами.
+    if (effectiveBal < 0) return;
 
     const allLessons = await storage.getLessonsByStudentId(studentId);
     const unpaidDone = allLessons
