@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
-import { Copy, ExternalLink, Info, Loader2, Link2, Video, LayoutGrid, Monitor, Bot, CheckCircle2, XCircle, Send, RefreshCw, Timer, ShieldCheck, Download, Trash2, Plus, Clock, HardDrive, Globe, Phone, MessageCircle, GraduationCap, Trophy, Youtube, Eye, EyeOff, Palette, Star, MessageSquare, Camera, CircleDollarSign } from "lucide-react";
+import { Copy, ExternalLink, Info, Loader2, Link2, Video, LayoutGrid, Monitor, Bot, CheckCircle2, XCircle, Send, RefreshCw, Timer, ShieldCheck, Download, Trash2, Plus, Clock, HardDrive, Globe, Phone, MessageCircle, GraduationCap, Trophy, Youtube, Eye, EyeOff, Palette, Star, MessageSquare, Camera, CircleDollarSign, RotateCcw } from "lucide-react";
 import { SiVk, SiWhatsapp, SiInstagram, SiTelegram } from "react-icons/si";
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -410,6 +410,21 @@ export default function ProfilePage() {
     setTgCopiedLink(studentId);
     toast.success("Ссылка скопирована!");
     setTimeout(() => setTgCopiedLink(null), 2000);
+  };
+
+  const handleResetOnboarding = () => {
+    if (!confirm("Это сбросит все флаги обучения. Онбординг запустится заново при следующей загрузке страницы. Продолжить?")) return;
+    const keys = [
+      "onboarding-welcomed",
+      "onboarding_wizard_v1",
+      "onboarding_checklist_dismissed",
+      "checklist-celebrated",
+      "onboarding_completed_tutor_v3",
+      "onboarding_completed_student_v3",
+    ];
+    for (const key of keys) localStorage.removeItem(key);
+    toast.success("Обучение сброшено. Страница сейчас перезагрузится...");
+    setTimeout(() => window.location.reload(), 1000);
   };
 
   if (!user) {
@@ -1261,6 +1276,28 @@ export default function ProfilePage() {
             <p className="text-xs text-muted-foreground">
               Авто-бэкапы создаются ежедневно при входе в систему и хранятся 7 дней. Ручных копий можно хранить до 10 штук. Файл резервной копии содержит всех учеников, занятия, платежи и домашние задания.
             </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5 text-muted-foreground" />
+              Обучение
+            </CardTitle>
+            <CardDescription>
+              Сброс онбординга позволяет пройти знакомство с платформой заново.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={handleResetOnboarding}
+            >
+              <RotateCcw className="h-4 w-4" />
+              Пройти онбординг заново
+            </Button>
           </CardContent>
         </Card>
       </div>
