@@ -3132,6 +3132,9 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
                 balance: student.balance + pending.amount,
               });
 
+              // После пополнения баланса — апгрейдим attended_unpaid → attended (non-blocking)
+              await autoUpgradeUnpaidLessons(meta.studentId).catch(() => {});
+
               const amountStr = `${pending.amount.toLocaleString("ru-RU")} ₽`;
 
               // Уведомление репетитору на сайте
