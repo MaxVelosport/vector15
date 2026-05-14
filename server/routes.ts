@@ -2484,7 +2484,7 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
         durationMinutes: z.number(),
         topic: z.string(),
         status: z.enum(["pending", "completed", "cancelled", "rescheduled"]).default("pending"),
-        attendance: z.enum(["attended", "attended_unpaid", "missed", "missed_paid"]).optional(),
+        attendance: z.enum(["attended", "attended_unpaid", "missed", "missed_paid", "missed_free"]).optional(),
         rating: z.number().optional(),
         notes: z.string().optional(),
       });
@@ -2748,7 +2748,7 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
           durationMinutes: z.number(),
           topic: z.string(),
           status: z.enum(["pending", "completed", "cancelled", "rescheduled"]).default("pending"),
-          attendance: z.enum(["attended", "attended_unpaid", "missed", "missed_paid"]).nullable().optional(),
+          attendance: z.enum(["attended", "attended_unpaid", "missed", "missed_paid", "missed_free"]).nullable().optional(),
         })),
       });
       const parsed = schema.safeParse(req.body);

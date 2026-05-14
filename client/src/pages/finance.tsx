@@ -387,7 +387,7 @@ export default function FinancePage() {
   const paidMonthLessons = allMonthLessons.filter(l => l.status === "completed" && l.attendance === "attended");
   const unpaidMonthLessons = allMonthLessons.filter(l => l.status === "completed" && l.attendance === "attended_unpaid");
   const cancelledPaidLessons = allMonthLessons.filter(l => l.status === "cancelled" && l.attendance === "missed_paid");
-  const cancelledFreeLessons = allMonthLessons.filter(l => l.status === "cancelled" && l.attendance === "missed");
+  const cancelledFreeLessons = allMonthLessons.filter(l => l.status === "cancelled" && (l.attendance === "missed" || l.attendance === "missed_free"));
   const pendingMonthLessons = allMonthLessons.filter(l => l.status === "pending");
 
   const monthGoal = allMonthLessons.reduce((sum, l) => {
