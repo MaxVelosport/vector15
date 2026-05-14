@@ -119,6 +119,29 @@ export default function AnalyticsPage() {
   const lessons = useMemo(() => lessonsData?.map(l => ({ ...l, scheduledAt: new Date(l.scheduledAt) })) ?? [], [lessonsData]);
   const payments = useMemo(() => paymentsData?.map(p => ({ ...p, createdAt: new Date(p.createdAt) })) ?? [], [paymentsData]);
 
+  // effectiveBalance = totalPaid − totalCost (cancelled+missed_paid по cancelAmount — фикс #1/#10)
+  const studentEffectiveBalances = useMemo(() => {
+    const map: Record<string, number> = {};
+    students.forEach(s => {
+      const totalPaid = payments.filter(p => p.studentId === s.id).reduce((sum, p) => sum + p.amount, 0);
+      const totalCost = lessons
+        .filter(l =>
+          l.studentId === s.id && (
+            (l.status === "completed" && ["attended", "attended_unpaid", "missed_paid"].includes((l as any).attendance ?? "")) ||
+            (l.status === "cancelled" && (l as any).attendance === "missed_paid")
+          )
+        )
+        .reduce((sum, l) => {
+          if (l.status === "cancelled" && (l as any).attendance === "missed_paid") {
+            return sum + ((l as any).cancelAmount ?? 0);
+          }
+          return sum + Math.round(s.pricePerLesson * ((l as any).durationMinutes || 60) / 60);
+        }, 0);
+      map[s.id] = totalPaid - totalCost;
+    });
+    return map;
+  }, [students, lessons, payments]);
+
   const isLoading = studentsLoading || lessonsLoading;
   const now = new Date();
 
@@ -252,8 +275,10 @@ export default function AnalyticsPage() {
 
   const hourlyRate = currentMonthData.hours > 0 ? Math.round(currentMonthData.earned / currentMonthData.hours) : avgLessonPrice;
 
-  const debtors = students.filter(s => s.balance < 0).sort((a, b) => a.balance - b.balance);
-  const totalDebt = debtors.reduce((sum, s) => sum + Math.abs(s.balance), 0);
+  const debtors = students
+    .filter(s => (studentEffectiveBalances[s.id] ?? s.balance) < 0)
+    .sort((a, b) => (studentEffectiveBalances[a.id] ?? a.balance) - (studentEffectiveBalances[b.id] ?? b.balance));
+  const totalDebt = debtors.reduce((sum, s) => sum + Math.abs(studentEffectiveBalances[s.id] ?? s.balance), 0);
 
   const weekdayLabels = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
   const weekdayData = useMemo(() => {
@@ -1008,8 +1033,8 @@ export default function AnalyticsPage() {
                         <div className="text-xs text-muted-foreground">{student.subject}</div>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold text-red-600">{moneyRub(student.balance)}</div>
-                        <div className="text-xs text-muted-foreground">{Math.ceil(Math.abs(student.balance) / (student.pricePerLesson || 1))} зан.</div>
+                        <div className="font-bold text-red-600">{moneyRub(studentEffectiveBalances[student.id] ?? student.balance)}</div>
+                        <div className="text-xs text-muted-foreground">{Math.ceil(Math.abs(studentEffectiveBalances[student.id] ?? student.balance) / (student.pricePerLesson || 1))} зан.</div>
                       </div>
                     </div>
                   ))}
@@ -1042,9 +1067,9 @@ export default function AnalyticsPage() {
                   <div className="text-[10px] text-muted-foreground">{debtors.length} учеников</div>
                 </div>
                 <div className="rounded-xl bg-emerald-500/10 p-4 text-center">
-                  <div className="text-xl font-bold text-emerald-600">{moneyRub(students.filter(s => s.balance > 0).reduce((sum, s) => sum + s.balance, 0))}</div>
+                  <div className="text-xl font-bold text-emerald-600">{moneyRub(students.filter(s => (studentEffectiveBalances[s.id] ?? s.balance) > 0).reduce((sum, s) => sum + (studentEffectiveBalances[s.id] ?? s.balance), 0))}</div>
                   <div className="text-xs text-muted-foreground">Переплата</div>
-                  <div className="text-[10px] text-muted-foreground">{students.filter(s => s.balance > 0).length} учеников</div>
+                  <div className="text-[10px] text-muted-foreground">{students.filter(s => (studentEffectiveBalances[s.id] ?? s.balance) > 0).length} учеников</div>
                 </div>
               </div>
               <div className="space-y-2">
