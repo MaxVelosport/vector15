@@ -171,7 +171,7 @@ export function useCreateLesson() {
 export function useUpdateLesson() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Lesson> & { deductFromBalance?: boolean } }) => {
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Lesson> }) => {
       const res = await fetch(`/api/lessons/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },

@@ -2515,8 +2515,7 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
 
   // PATCH /api/lessons/:id - Обновить занятие
   app.patch("/api/lessons/:id", requireAuth, async (req, res) => {
-    const { deductFromBalance, ...rawUpdates } = req.body;
-    const updates: any = { ...rawUpdates };
+    const updates: any = { ...req.body };
     if (updates.scheduledAt) {
       updates.scheduledAt = new Date(updates.scheduledAt);
     }
