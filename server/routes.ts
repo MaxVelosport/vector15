@@ -2889,7 +2889,7 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
     try {
       const schema = z.object({
         studentId: z.string(),
-        amount: z.number(),
+        amount: z.number().min(1, "Сумма должна быть положительной"),
         method: z.enum(["наличные", "перевод", "карта"]),
         comment: z.string().optional(),
       });
