@@ -1576,7 +1576,8 @@ export default function SchedulePage() {
                                 {/* Status buttons */}
                                 <div className="flex flex-wrap gap-2">
                                   <button
-                                    className={cn("px-3 py-1.5 rounded-lg text-xs border transition-colors flex items-center gap-1.5",
+                                    disabled={updateLesson.isPending}
+                                    className={cn("px-3 py-1.5 rounded-lg text-xs border transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
                                       booked.status === "completed" && booked.attendance === "attended"
                                         ? "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 text-emerald-700 font-medium"
                                         : "bg-background border-border/50 text-muted-foreground hover:bg-emerald-50 dark:hover:bg-emerald-900/20")}
@@ -1585,7 +1586,8 @@ export default function SchedulePage() {
                                     <Check className="h-3 w-3" /> Проведено
                                   </button>
                                   <button
-                                    className={cn("px-3 py-1.5 rounded-lg text-xs border transition-colors flex items-center gap-1.5",
+                                    disabled={updateLesson.isPending}
+                                    className={cn("px-3 py-1.5 rounded-lg text-xs border transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
                                       booked.status === "completed" && booked.attendance === "attended_unpaid"
                                         ? "bg-orange-100 dark:bg-orange-900/30 border-orange-300 text-orange-700 font-medium"
                                         : "bg-background border-border/50 text-muted-foreground hover:bg-orange-50 dark:hover:bg-orange-900/20")}
@@ -1594,7 +1596,8 @@ export default function SchedulePage() {
                                     <X className="h-3 w-3" /> Проведено ✗
                                   </button>
                                   <button
-                                    className={cn("px-3 py-1.5 rounded-lg text-xs border transition-colors flex items-center gap-1.5",
+                                    disabled={updateLesson.isPending}
+                                    className={cn("px-3 py-1.5 rounded-lg text-xs border transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
                                       booked.status === "cancelled"
                                         ? "bg-red-100 dark:bg-red-900/30 border-red-300 text-red-700 font-medium"
                                         : "bg-background border-border/50 text-muted-foreground hover:bg-red-50 dark:hover:bg-red-900/20")}
@@ -1603,7 +1606,8 @@ export default function SchedulePage() {
                                     <X className="h-3 w-3" /> Отменено
                                   </button>
                                   <button
-                                    className={cn("px-3 py-1.5 rounded-lg text-xs border transition-colors flex items-center gap-1.5",
+                                    disabled={updateLesson.isPending}
+                                    className={cn("px-3 py-1.5 rounded-lg text-xs border transition-colors flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed",
                                       booked.status === "pending"
                                         ? "bg-amber-100 dark:bg-amber-900/30 border-amber-300 text-amber-700 font-medium"
                                         : "bg-background border-border/50 text-muted-foreground hover:bg-amber-50 dark:hover:bg-amber-900/20")}

@@ -650,3 +650,9 @@ select:focus-visible {
   border-color: hsl(var(--ring) / 0.6);
   transition: box-shadow 140ms ease, border-color 140ms ease;
 }
+
+/* Focus ring for raw <button> elements not using shadcn Button */
+button:focus-visible:not([class*="focus-visible"]) {
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring) / 0.6);
+}

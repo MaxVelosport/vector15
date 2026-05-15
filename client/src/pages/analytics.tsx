@@ -616,11 +616,11 @@ export default function AnalyticsPage() {
                 Доход по месяцам
               </CardTitle>
               <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setChartOffset(o => Math.max(0, o - 1))} disabled={chartOffset === 0} data-testid="button-chart-prev">
+                <Button variant="ghost" size="icon" className="h-8 w-8" title="Предыдущий период" onClick={() => setChartOffset(o => Math.max(0, o - 1))} disabled={chartOffset === 0} data-testid="button-chart-prev">
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <span className="text-xs text-muted-foreground px-1">{chartOffset + 1}/{maxPages || 1}</span>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setChartOffset(o => Math.min(maxPages - 1, o + 1))} disabled={chartOffset >= maxPages - 1} data-testid="button-chart-next">
+                <Button variant="ghost" size="icon" className="h-8 w-8" title="Следующий период" onClick={() => setChartOffset(o => Math.min(maxPages - 1, o + 1))} disabled={chartOffset >= maxPages - 1} data-testid="button-chart-next">
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -952,7 +952,7 @@ export default function AnalyticsPage() {
                 Статистика
               </CardTitle>
               <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setStatsOffset(o => o - 1)} data-testid="button-stats-prev">
+                <Button variant="ghost" size="icon" className="h-8 w-8" title="Предыдущий период" onClick={() => setStatsOffset(o => o - 1)} data-testid="button-stats-prev">
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 {(["week", "month", "year"] as const).map(p => (
@@ -961,7 +961,7 @@ export default function AnalyticsPage() {
                     {p === "week" ? "Неделя" : p === "month" ? "Месяц" : "Год"}
                   </Button>
                 ))}
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setStatsOffset(o => o + 1)} data-testid="button-stats-next">
+                <Button variant="ghost" size="icon" className="h-8 w-8" title="Следующий период" onClick={() => setStatsOffset(o => o + 1)} data-testid="button-stats-next">
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>

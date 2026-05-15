@@ -674,7 +674,7 @@ export default function AIPage() {
                     className="shrink-0 h-9 w-9 rounded-xl"
                     disabled={sendMessage.isPending || isCreatingChat || (!chatInput.trim() && !pendingImage)}
                   >
-                    <Send className="h-4 w-4" />
+                    {sendMessage.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   </Button>
                 </form>
               </div>
