@@ -41,6 +41,7 @@ import { PageHero } from "@/components/page-hero";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -612,9 +613,24 @@ export default function FinancePage() {
 
   if (isLoading) {
     return (
-      <DashboardLayout title="Финансы" subtitle="Загрузка...">
-        <div className="flex items-center justify-center py-20">
-          <div className="animate-pulse text-muted-foreground">Загрузка...</div>
+      <DashboardLayout title="Финансы">
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i} className="rounded-2xl"><CardContent className="pt-6"><Skeleton className="h-7 w-20 mb-2" /><Skeleton className="h-4 w-28" /></CardContent></Card>
+            ))}
+          </div>
+          <Card className="rounded-2xl">
+            <CardContent className="pt-4 space-y-3">
+              <Skeleton className="h-9 w-48 rounded-xl" />
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
+                  <div className="flex items-center gap-3"><Skeleton className="h-8 w-8 rounded-full" /><Skeleton className="h-4 w-32" /></div>
+                  <div className="flex gap-6"><Skeleton className="h-4 w-16" /><Skeleton className="h-4 w-16" /><Skeleton className="h-5 w-20" /></div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </div>
       </DashboardLayout>
     );

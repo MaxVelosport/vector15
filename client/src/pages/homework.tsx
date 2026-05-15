@@ -29,6 +29,7 @@ import { PageHero } from "@/components/page-hero";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -387,9 +388,26 @@ export default function HomeworkPage() {
 
   if (isLoading) {
     return (
-      <DashboardLayout title="Домашки" subtitle="Загрузка...">
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <DashboardLayout title="Домашки">
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-9 w-28 rounded-xl" />)}
+          </div>
+          {[...Array(5)].map((_, i) => (
+            <Card key={i} className="rounded-2xl">
+              <CardContent className="pt-4 pb-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2"><Skeleton className="h-5 w-48" /><Skeleton className="h-5 w-16 rounded-full" /></div>
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-3/4" />
+                  </div>
+                  <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </DashboardLayout>
     );

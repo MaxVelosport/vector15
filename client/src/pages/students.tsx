@@ -54,6 +54,7 @@ import { PageHero } from "@/components/page-hero";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -1028,9 +1029,25 @@ export default function StudentsPage() {
 
   if (isLoading) {
     return (
-      <DashboardLayout title="Ученики" subtitle="Загрузка...">
-        <div className="flex items-center justify-center py-20">
-          <div className="animate-pulse text-muted-foreground">Загрузка...</div>
+      <DashboardLayout title="Ученики">
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-4">
+            {[...Array(3)].map((_, i) => (
+              <Card key={i} className="rounded-2xl"><CardContent className="pt-6"><Skeleton className="h-8 w-16 mb-2" /><Skeleton className="h-4 w-24" /></CardContent></Card>
+            ))}
+          </div>
+          <Card className="rounded-2xl">
+            <CardContent className="pt-4 space-y-2">
+              <Skeleton className="h-9 w-full rounded-xl" />
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center gap-4 p-3 rounded-2xl border border-border/30">
+                  <Skeleton className="h-12 w-12 rounded-full shrink-0" />
+                  <div className="flex-1 space-y-2"><Skeleton className="h-4 w-40" /><Skeleton className="h-3 w-64" /></div>
+                  <Skeleton className="h-6 w-24" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </div>
       </DashboardLayout>
     );

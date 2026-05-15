@@ -35,6 +35,7 @@ import {
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { PageHero } from "@/components/page-hero";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useStudents, useLessons, usePayments } from "@/hooks/use-tutor-data";
@@ -463,9 +464,17 @@ export default function AnalyticsPage() {
 
   if (isLoading) {
     return (
-      <DashboardLayout title="Аналитика" subtitle="Загрузка...">
-        <div className="flex items-center justify-center py-20">
-          <div className="animate-pulse text-muted-foreground">Загрузка...</div>
+      <DashboardLayout title="Аналитика" subtitle="Ключевые показатели вашей работы">
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <Card key={i} className="rounded-2xl"><CardContent className="pt-6"><Skeleton className="h-7 w-16 mb-2" /><Skeleton className="h-4 w-24" /></CardContent></Card>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <Card className="rounded-2xl"><CardHeader><Skeleton className="h-5 w-36" /></CardHeader><CardContent><Skeleton className="h-48 w-full rounded-xl" /></CardContent></Card>
+            <Card className="rounded-2xl"><CardHeader><Skeleton className="h-5 w-36" /></CardHeader><CardContent><Skeleton className="h-48 w-full rounded-xl" /></CardContent></Card>
+          </div>
         </div>
       </DashboardLayout>
     );

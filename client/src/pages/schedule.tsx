@@ -38,6 +38,7 @@ import { PageHero } from "@/components/page-hero";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
@@ -684,9 +685,25 @@ export default function SchedulePage() {
 
   if (isLoading) {
     return (
-      <DashboardLayout title="Расписание" subtitle="Загрузка...">
-        <div className="flex items-center justify-center py-20">
-          <div className="animate-pulse text-muted-foreground">Загрузка...</div>
+      <DashboardLayout title="Расписание">
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-9 w-24 rounded-xl" />)}
+          </div>
+          <Card className="rounded-2xl overflow-hidden">
+            <div className="grid grid-cols-7 border-b border-border/30">
+              {[...Array(7)].map((_, i) => <div key={i} className="p-3"><Skeleton className="h-4 w-12 mx-auto" /></div>)}
+            </div>
+            {[...Array(6)].map((_, row) => (
+              <div key={row} className="grid grid-cols-7 border-b border-border/30 last:border-0">
+                {[...Array(7)].map((_, col) => (
+                  <div key={col} className="p-2 min-h-[80px]">
+                    {(row * 7 + col) % 3 === 0 && <Skeleton className="h-16 w-full rounded-xl" />}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </Card>
         </div>
       </DashboardLayout>
     );
