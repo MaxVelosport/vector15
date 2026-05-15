@@ -79,7 +79,7 @@ export default function QuizzesPage() {
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between gap-2">
                       <CardTitle className="text-base">{q.topic}</CardTitle>
-                      <Badge variant={q.status === 'active' ? 'default' : 'secondary'}>{q.status}</Badge>
+                      <Badge variant={q.status === 'active' ? 'default' : 'secondary'}>{q.status === 'active' ? 'Активен' : 'Черновик'}</Badge>
                     </div>
                     {q.description && <p className="text-xs text-muted-foreground mt-1">{q.description}</p>}
                   </CardHeader>

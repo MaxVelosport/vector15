@@ -210,7 +210,7 @@ function StudentSidebar({ currentPath, studentName, onLogout }: {
               onClick={(e) => { e.preventDefault(); setLocation(item.path); }}
               data-testid={`nav-student-${item.value}`}
               className={cn(
-                "relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
                 isActive ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
               title={item.description}
@@ -222,7 +222,7 @@ function StudentSidebar({ currentPath, studentName, onLogout }: {
                   transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
                 />
               )}
-              <Icon style={{ width: 18, height: 18 }} className={cn("shrink-0", isActive ? "text-primary" : "")} />
+              <Icon style={{ width: 18, height: 18 }} className={cn("shrink-0 transition-transform duration-150 group-hover:scale-110", isActive ? "text-primary" : "")} />
               <span>{item.label}</span>
             </motion.a>
           );
