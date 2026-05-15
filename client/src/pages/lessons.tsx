@@ -1395,7 +1395,7 @@ export default function LessonsPage() {
                         <Card
                           key={lesson.id}
                           className={cn(
-                            "rounded-xl border-border/50 transition-all",
+                            "rounded-xl border-border/50 transition-all hover:shadow-sm hover:border-border",
                             isToday && "border-blue-200/60",
                             isPast && !isToday && "opacity-80"
                           )}

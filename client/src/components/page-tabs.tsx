@@ -38,7 +38,7 @@ export function PageTabs({ tabs, className }: PageTabsProps) {
               "relative flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-sm font-medium transition-all",
               isActive
                 ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
+                : "text-muted-foreground hover:text-foreground hover:bg-accent/60",
             )}
             data-testid={`page-tab-${tab.path.replace(/\//g, "-")}`}
           >

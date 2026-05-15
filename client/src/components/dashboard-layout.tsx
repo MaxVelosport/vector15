@@ -420,7 +420,7 @@ function DashboardSidebar({ currentPath }: { currentPath: string }) {
                   transition={{ delay: idx * 0.03 }}
                   onClick={(e) => { e.preventDefault(); setLocation(item.path); }}
                   className={cn(
-                    "relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-200",
+                    "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-all duration-200",
                     isActive
                       ? "bg-primary/10 dark:bg-sidebar-primary/12 text-primary dark:text-sidebar-primary-foreground shadow-sm"
                       : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -434,7 +434,7 @@ function DashboardSidebar({ currentPath }: { currentPath: string }) {
                       transition={{ type: "spring", bounce: 0.15, duration: 0.4 }}
                     />
                   )}
-                  <Icon className={cn("h-[18px] w-[18px]", isActive ? "text-primary dark:text-sidebar-primary" : "text-sidebar-foreground/45")} />
+                  <Icon className={cn("h-[18px] w-[18px] transition-transform duration-150 group-hover:scale-110", isActive ? "text-primary dark:text-sidebar-primary" : "text-sidebar-foreground/45")} />
                   <span>{item.label}</span>
                 </motion.a>
               </TooltipTrigger>
