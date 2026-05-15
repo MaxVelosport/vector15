@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
@@ -327,6 +328,7 @@ export default function ProfilePage() {
   const [codeSecondsLeft, setCodeSecondsLeft] = useState(900);
   const [codeCopied, setCodeCopied] = useState(false);
   const codeTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [confirmResetOnboarding, setConfirmResetOnboarding] = useState(false);
 
   const generateCode = useMutation({
     mutationFn: (payload: { type: "tutor" | "student"; studentId?: string }) =>
@@ -412,8 +414,10 @@ export default function ProfilePage() {
     setTimeout(() => setTgCopiedLink(null), 2000);
   };
 
-  const handleResetOnboarding = () => {
-    if (!confirm("Это сбросит все флаги обучения. Онбординг запустится заново при следующей загрузке страницы. Продолжить?")) return;
+  const handleResetOnboarding = () => setConfirmResetOnboarding(true);
+
+  const handleResetOnboardingConfirmed = () => {
+    setConfirmResetOnboarding(false);
     const keys = [
       "onboarding-welcomed",
       "onboarding_wizard_v1",
@@ -1452,6 +1456,15 @@ export default function ProfilePage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={confirmResetOnboarding}
+        title="Сбросить онбординг?"
+        description="Все флаги обучения будут удалены. Онбординг запустится заново при следующей загрузке страницы."
+        confirmText="Сбросить"
+        onConfirm={handleResetOnboardingConfirmed}
+        onCancel={() => setConfirmResetOnboarding(false)}
+      />
     </DashboardLayout>
   );
 }
@@ -1459,6 +1472,7 @@ export default function ProfilePage() {
 function ReviewsModeration() {
   const qc = useQueryClient();
   const { data: reviews = [], isLoading } = useQuery<any[]>({ queryKey: ["/api/reviews"] });
+  const [pendingDeleteReviewId, setPendingDeleteReviewId] = useState<string | null>(null);
 
   const approveMut = useMutation({
     mutationFn: async ({ id, isApproved }: { id: string; isApproved: boolean }) =>
@@ -1478,6 +1492,7 @@ function ReviewsModeration() {
   const approvedCount = reviews.filter((r: any) => r.isApproved).length;
 
   return (
+    <>
     <Card className="rounded-2xl border-border/70 bg-card/60">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
@@ -1564,7 +1579,7 @@ function ReviewsModeration() {
                       variant="ghost"
                       className="h-7 text-xs text-destructive hover:text-destructive"
                       onClick={() => {
-                        if (confirm("Удалить отзыв безвозвратно?")) deleteMut.mutate(r.id);
+                        setPendingDeleteReviewId(r.id);
                       }}
                       disabled={deleteMut.isPending}
                       data-testid={`button-delete-${r.id}`}
@@ -1579,5 +1594,15 @@ function ReviewsModeration() {
         )}
       </CardContent>
     </Card>
+
+    <ConfirmDialog
+      open={!!pendingDeleteReviewId}
+      title="Удалить отзыв?"
+      description="Отзыв будет удалён безвозвратно."
+      confirmText="Удалить"
+      onConfirm={() => { deleteMut.mutate(pendingDeleteReviewId!); setPendingDeleteReviewId(null); }}
+      onCancel={() => setPendingDeleteReviewId(null)}
+    />
+    </>
   );
 }

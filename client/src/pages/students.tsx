@@ -56,6 +56,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -488,6 +489,7 @@ export default function StudentsPage() {
   const [isSettingPassword, setIsSettingPassword] = useState(false);
   const [showCredentialsSuccess, setShowCredentialsSuccess] = useState(false);
   const [savedCredentials, setSavedCredentials] = useState({ email: "", password: "" });
+  const [pendingDeleteSlot, setPendingDeleteSlot] = useState<{ count: number; day: string; time: string; lessonIds: string[] } | null>(null);
 
   const studentLessons = useMemo(() => {
     if (!selectedStudent) return { total: 0, completed: 0, thisMonth: 0 };
@@ -2066,11 +2068,12 @@ export default function StudentsPage() {
                                         className="h-8 px-2 text-red-500 hover:text-red-600 hover:bg-red-50"
                                         data-testid={`button-delete-slot-${key}`}
                                         onClick={() => {
-                                          if (!window.confirm(`Удалить все ${slot.count} занятий в ${DAY_NAMES_FULL[slot.dayOfWeek]} в ${timeStr}?`)) return;
-                                          slot.lessons.forEach(l => {
-                                            deleteLesson.mutate(l.id);
+                                          setPendingDeleteSlot({
+                                            count: slot.count,
+                                            day: DAY_NAMES_FULL[slot.dayOfWeek],
+                                            time: timeStr,
+                                            lessonIds: slot.lessons.map((l: any) => l.id),
                                           });
-                                          toast.success(`Удалено ${slot.count} занятий`);
                                         }}
                                       >
                                         <Trash2 className="h-3.5 w-3.5" />
@@ -3838,6 +3841,19 @@ export default function StudentsPage() {
       </Dialog>
 
       <StudentsImportDialog open={showImportDialog} onOpenChange={setShowImportDialog} />
+
+      <ConfirmDialog
+        open={!!pendingDeleteSlot}
+        title={`Удалить ${pendingDeleteSlot?.count ?? ""} занятий?`}
+        description={`Все занятия в ${pendingDeleteSlot?.day} в ${pendingDeleteSlot?.time} будут удалены безвозвратно.`}
+        confirmText="Удалить всё"
+        onConfirm={() => {
+          pendingDeleteSlot?.lessonIds.forEach(id => deleteLesson.mutate(id));
+          toast.success(`Удалено ${pendingDeleteSlot?.count} занятий`);
+          setPendingDeleteSlot(null);
+        }}
+        onCancel={() => setPendingDeleteSlot(null)}
+      />
     </DashboardLayout>
   );
 }

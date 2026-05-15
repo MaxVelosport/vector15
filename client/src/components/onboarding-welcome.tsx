@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { DialogPortal, DialogOverlay } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Sparkles, GraduationCap, Compass, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useStudents } from "@/hooks/use-tutor-data";
@@ -16,6 +17,7 @@ export function OnboardingWelcome() {
   const { data: students = [], isLoading: studentsLoading } = useStudents();
   const [open, setOpen] = useState(false);
   const [loadingDemo, setLoadingDemo] = useState(false);
+  const [confirmDemoOpen, setConfirmDemoOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -72,7 +74,11 @@ export function OnboardingWelcome() {
       });
       return;
     }
-    if (!confirm("Это создаст 5 примерных учеников с занятиями и платежами. Продолжить?")) return;
+    setConfirmDemoOpen(true);
+  };
+
+  const handleDemoConfirmed = async () => {
+    setConfirmDemoOpen(false);
 
     setLoadingDemo(true);
     try {
@@ -102,6 +108,7 @@ export function OnboardingWelcome() {
   };
 
   return (
+    <>
     <DialogPrimitive.Root open={open} onOpenChange={(v) => { if (!v) dismiss(); }}>
       <DialogPortal>
         <DialogOverlay className="backdrop-blur-[8px] bg-black/70 z-[9998]" />
@@ -216,5 +223,15 @@ export function OnboardingWelcome() {
         </DialogPrimitive.Content>
       </DialogPortal>
     </DialogPrimitive.Root>
+
+    <ConfirmDialog
+      open={confirmDemoOpen}
+      title="Загрузить демо-данные?"
+      description="Будет создано 5 примерных учеников с занятиями и платежами. Действие необратимо."
+      confirmText="Загрузить"
+      onConfirm={handleDemoConfirmed}
+      onCancel={() => setConfirmDemoOpen(false)}
+    />
+    </>
   );
 }

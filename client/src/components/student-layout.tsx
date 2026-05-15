@@ -40,6 +40,7 @@ import { HelpTooltip } from "@/components/help-tooltip";
 import { StudentHelpWidget } from "@/components/student-help-widget";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -262,6 +263,7 @@ function TelegramManagerButton() {
   const [showCodeDialog, setShowCodeDialog] = useState(false);
   const [linkCode, setLinkCode] = useState<string | null>(null);
   const [codeSecondsLeft, setCodeSecondsLeft] = useState(900);
+  const [confirmUnlinkOpen, setConfirmUnlinkOpen] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -465,9 +467,7 @@ function TelegramManagerButton() {
                 variant="ghost"
                 size="sm"
                 className="w-full gap-2 justify-start text-xs h-9 text-red-500 hover:text-red-600 hover:bg-red-500/8"
-                onClick={() => {
-                  if (confirm("Отключить Telegram от аккаунта?")) unlink.mutate();
-                }}
+                onClick={() => setConfirmUnlinkOpen(true)}
                 disabled={unlink.isPending}
                 data-testid="button-tg-unlink"
               >
@@ -572,6 +572,15 @@ function TelegramManagerButton() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={confirmUnlinkOpen}
+        title="Отключить Telegram?"
+        description="Уведомления через Telegram будут отключены. Вы сможете подключить его снова."
+        confirmText="Отключить"
+        onConfirm={() => { unlink.mutate(); setConfirmUnlinkOpen(false); }}
+        onCancel={() => setConfirmUnlinkOpen(false)}
+      />
     </>
   );
 }

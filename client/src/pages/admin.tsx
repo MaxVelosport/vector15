@@ -26,6 +26,7 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Spinner } from "@/components/ui/spinner";
 import { useAuth } from "@/hooks/use-auth";
@@ -299,6 +300,7 @@ function PromoCodesTab({ activeTab }: { activeTab: string }) {
   const qc = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<PromoCodeRow | null>(null);
+  const [pendingDeletePromoId, setPendingDeletePromoId] = useState<string | null>(null);
   const [form, setForm] = useState({
     code: '',
     description: '',
@@ -456,7 +458,7 @@ function PromoCodesTab({ activeTab }: { activeTab: string }) {
                         </Button>
                         <Button
                           variant="ghost" size="icon"
-                          onClick={() => { if (confirm(`Удалить промокод ${p.code}?`)) deleteMut.mutate(p.id); }}
+                          onClick={() => setPendingDeletePromoId(p.id)}
                           data-testid={`button-delete-promo-${p.id}`}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
@@ -573,6 +575,15 @@ function PromoCodesTab({ activeTab }: { activeTab: string }) {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!pendingDeletePromoId}
+        title="Удалить промокод?"
+        description="Промокод будет удалён. Уже использованные скидки останутся в силе."
+        confirmText="Удалить"
+        onConfirm={() => { deleteMut.mutate(pendingDeletePromoId!); setPendingDeletePromoId(null); }}
+        onCancel={() => setPendingDeletePromoId(null)}
+      />
     </TabsContent>
   );
 }
@@ -940,6 +951,7 @@ function PaymentsTab({ activeTab }: { activeTab: string }) {
   const [subTab, setSubTab] = useState<"students" | "subscriptions">("students");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [pendingRefund, setPendingRefund] = useState<{ id: string; amount: number } | null>(null);
   const qc = useQueryClient();
 
   const { data: studentPayments = [], isLoading: loadingP } = useQuery<any[]>({
@@ -1111,11 +1123,7 @@ function PaymentsTab({ activeTab }: { activeTab: string }) {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => {
-                              if (confirm(`Оформить возврат на сумму ${p.amount} ₽ через ЮKassa?\nБаланс ученика будет уменьшен.`)) {
-                                refundMut.mutate(p.id);
-                              }
-                            }}
+                            onClick={() => setPendingRefund({ id: p.id, amount: Number(p.amount) })}
                             disabled={refundMut.isPending}
                             data-testid={`button-refund-${p.id}`}
                           >
@@ -1131,6 +1139,15 @@ function PaymentsTab({ activeTab }: { activeTab: string }) {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!pendingRefund}
+        title={`Оформить возврат ${pendingRefund?.amount?.toLocaleString("ru-RU") ?? ""} ₽?`}
+        description="Возврат будет выполнен через ЮKassa. Баланс ученика будет уменьшен на сумму возврата."
+        confirmText="Оформить возврат"
+        onConfirm={() => { refundMut.mutate(pendingRefund!.id); setPendingRefund(null); }}
+        onCancel={() => setPendingRefund(null)}
+      />
     </TabsContent>
   );
 }

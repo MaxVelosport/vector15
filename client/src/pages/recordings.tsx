@@ -19,6 +19,7 @@ import type { LessonRecording, Student } from "@shared/schema";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 import { DashboardLayout } from "@/components/dashboard-layout";
 import { PageTabs } from "@/components/page-tabs";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; className: string; icon?: any }> = {
     pending:      { label: "Ожидает аудио",   className: "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200" },
@@ -58,6 +59,7 @@ export default function RecordingsPage() {
 function RecordingsList() {
   const { toast } = useToast();
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const { data: recordings = [], isLoading, refetch } = useQuery<LessonRecording[]>({
     queryKey: ["/api/recordings"],
@@ -188,7 +190,7 @@ function RecordingsList() {
                     ) : null}
                     <Button
                       variant="ghost" size="icon"
-                      onClick={() => { if (confirm("Удалить запись?")) deleteMut.mutate(r.id); }}
+                      onClick={() => setPendingDeleteId(r.id)}
                       data-testid={`button-delete-${r.id}`}
                     >
                       <Trash2 className="h-4 w-4 text-red-500" />
@@ -202,6 +204,15 @@ function RecordingsList() {
       )}
 
       <UploadDialog open={uploadOpen} onOpenChange={setUploadOpen} students={students} />
+
+      <ConfirmDialog
+        open={!!pendingDeleteId}
+        title="Удалить запись?"
+        description="Запись и все связанные данные будут удалены безвозвратно."
+        confirmText="Удалить"
+        onConfirm={() => { deleteMut.mutate(pendingDeleteId!); setPendingDeleteId(null); }}
+        onCancel={() => setPendingDeleteId(null)}
+      />
       </div>
     </DashboardLayout>
   );

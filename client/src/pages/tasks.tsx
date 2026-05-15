@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
@@ -637,6 +638,7 @@ export default function TasksPage() {
   ]);
   const [showQuickBuilder, setShowQuickBuilder] = useState(true);
   const [isBuilding, setIsBuilding] = useState(false);
+  const [pendingDeleteVariantId, setPendingDeleteVariantId] = useState<string | null>(null);
 
   const LIMIT = 12;
 
@@ -1409,7 +1411,7 @@ export default function TasksPage() {
                         <FileText className="h-3.5 w-3.5" />
                       </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-red-500"
-                        onClick={() => { if (confirm("Удалить вариант?")) deleteMutation.mutate(v.id); }}
+                        onClick={() => setPendingDeleteVariantId(v.id)}
                         title="Удалить" data-testid={`button-delete-variant-${v.id}`}>
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
@@ -1491,6 +1493,15 @@ export default function TasksPage() {
         variant={currentSendVariant}
         variantTaskIds={currentSendVariant?.taskIds || []}
         students={students}
+      />
+
+      <ConfirmDialog
+        open={!!pendingDeleteVariantId}
+        title="Удалить вариант?"
+        description="Вариант будет удалён безвозвратно."
+        confirmText="Удалить"
+        onConfirm={() => { deleteMutation.mutate(pendingDeleteVariantId!); setPendingDeleteVariantId(null); }}
+        onCancel={() => setPendingDeleteVariantId(null)}
       />
     </DashboardLayout>
   );
