@@ -286,13 +286,32 @@ export default function FinancePage() {
     return Math.round(student.pricePerLesson * duration / 60);
   };
 
+  // Группируем один раз — O(n) вместо O(n_students × n_records) в map ниже
+  const paymentsByStudent = useMemo(() => {
+    const m = new Map<string, typeof payments>();
+    for (const p of payments) {
+      if (!m.has(p.studentId)) m.set(p.studentId, []);
+      m.get(p.studentId)!.push(p);
+    }
+    return m;
+  }, [payments]);
+
+  const lessonsByStudent = useMemo(() => {
+    const m = new Map<string, typeof lessons>();
+    for (const l of lessons) {
+      if (!m.has(l.studentId)) m.set(l.studentId, []);
+      m.get(l.studentId)!.push(l);
+    }
+    return m;
+  }, [lessons]);
+
   const studentFinanceData = useMemo(() => {
     return students.map(s => {
-      const studentPayments = payments.filter(p => p.studentId === s.id);
+      const studentPayments = paymentsByStudent.get(s.id) ?? [];
       const totalPaid = studentPayments.reduce((sum, p) => sum + p.amount, 0);
       const lastPayment = [...studentPayments].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
 
-      const billableLessons = lessons.filter(l => l.studentId === s.id && isBillable(l));
+      const billableLessons = (lessonsByStudent.get(s.id) ?? []).filter(l => isBillable(l));
       const totalLessonsCost = billableLessons.reduce((sum, l) => sum + calcLessonCost(l, s), 0);
       const effectiveBalance = totalPaid - totalLessonsCost;
 
@@ -315,8 +334,8 @@ export default function FinancePage() {
       const unpaidLessons = debtLessons;
       const unpaidDebt = unpaidLessons.reduce((sum, l) => sum + calcLessonCost(l, s), 0);
 
-      const monthLessons = lessons.filter(
-        l => l.studentId === s.id && l.scheduledAt >= startOfMonth && l.scheduledAt <= endOfMonth && isBillable(l)
+      const monthLessons = (lessonsByStudent.get(s.id) ?? []).filter(
+        l => l.scheduledAt >= startOfMonth && l.scheduledAt <= endOfMonth && isBillable(l)
       );
       const monthlyCost = monthLessons.reduce((sum, l) => sum + calcLessonCost(l, s), 0);
       const paidThisMonth = studentPayments
@@ -338,7 +357,7 @@ export default function FinancePage() {
         billableLessonsCount: billableLessons.length,
       };
     });
-  }, [students, payments, lessons, startOfMonth, endOfMonth]);
+  }, [students, paymentsByStudent, lessonsByStudent, startOfMonth, endOfMonth]);
 
   const filteredSortedStudents = useMemo(() => {
     let filtered = [...studentFinanceData];

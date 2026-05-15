@@ -252,14 +252,32 @@ export default function StudentsPage() {
   const lessons = useMemo(() => lessonsData?.map(l => ({ ...l, scheduledAt: new Date(l.scheduledAt) })) ?? [], [lessonsData]);
   const payments = useMemo(() => paymentsData ?? [], [paymentsData]);
 
-  const getEffectiveBalance = (studentId: string) => {
-    const student = students.find(s => s.id === studentId);
-    const totalPaid = payments.filter(p => p.studentId === studentId).reduce((sum, p) => sum + p.amount, 0);
-    const isBillable = (l: any) => (l.status === "completed" && l.attendance === "attended") || (l.status === "cancelled" && l.attendance === "missed_paid");
-    const totalCost = lessons.filter(l => l.studentId === studentId && isBillable(l))
-      .reduce((sum, l) => sum + Math.round((student?.pricePerLesson ?? 0) * (l.durationMinutes ?? 60) / 60), 0);
-    return totalPaid - totalCost;
-  };
+  const isBillable = (l: any) =>
+    (l.status === "completed" && l.attendance === "attended") ||
+    (l.status === "cancelled" && l.attendance === "missed_paid");
+
+  // Предвычисляем баланс всех студентов один раз — O(n) вместо O(n²) в render
+  const effectiveBalanceMap = useMemo(() => {
+    const paidByStudent = new Map<string, number>();
+    for (const p of payments) {
+      paidByStudent.set(p.studentId, (paidByStudent.get(p.studentId) ?? 0) + p.amount);
+    }
+    const priceByStudent = new Map<string, number>(students.map(s => [s.id, s.pricePerLesson ?? 0]));
+    const costByStudent = new Map<string, number>();
+    for (const l of lessons) {
+      if (!isBillable(l)) continue;
+      const price = priceByStudent.get(l.studentId) ?? 0;
+      const cost = Math.round(price * (l.durationMinutes ?? 60) / 60);
+      costByStudent.set(l.studentId, (costByStudent.get(l.studentId) ?? 0) + cost);
+    }
+    const map = new Map<string, number>();
+    for (const s of students) {
+      map.set(s.id, (paidByStudent.get(s.id) ?? 0) - (costByStudent.get(s.id) ?? 0));
+    }
+    return map;
+  }, [students, lessons, payments]);
+
+  const getEffectiveBalance = (studentId: string) => effectiveBalanceMap.get(studentId) ?? 0;
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
 
@@ -977,13 +995,16 @@ export default function StudentsPage() {
     return Array.from(subjects).sort();
   }, [students]);
 
-  const displayedStudents = (showArchived ? archivedStudents : activeStudents)
-    .filter((s) => !studentFilter || s.name.toLowerCase().includes(studentFilter.toLowerCase()) || s.subject.toLowerCase().includes(studentFilter.toLowerCase()))
-    .filter((s) => !subjectFilter || s.subject === subjectFilter)
-    .sort((a, b) => {
-      if (sortBy === "balance") return getEffectiveBalance(a.id) - getEffectiveBalance(b.id);
-      return a.name.localeCompare(b.name, "ru");
-    });
+  const displayedStudents = useMemo(() => {
+    const base = showArchived ? archivedStudents : activeStudents;
+    return base
+      .filter((s) => !studentFilter || s.name.toLowerCase().includes(studentFilter.toLowerCase()) || s.subject.toLowerCase().includes(studentFilter.toLowerCase()))
+      .filter((s) => !subjectFilter || s.subject === subjectFilter)
+      .sort((a, b) => {
+        if (sortBy === "balance") return getEffectiveBalance(a.id) - getEffectiveBalance(b.id);
+        return a.name.localeCompare(b.name, "ru");
+      });
+  }, [showArchived, archivedStudents, activeStudents, studentFilter, subjectFilter, sortBy, effectiveBalanceMap]);
 
   if (isLoading) {
     return (
