@@ -209,6 +209,7 @@ function RecordingsList() {
         title="Удалить запись?"
         description="Запись и все связанные данные будут удалены безвозвратно."
         confirmText="Удалить"
+        destructive={true}
         onConfirm={() => { deleteMut.mutate(pendingDeleteId!); setPendingDeleteId(null); }}
         onCancel={() => setPendingDeleteId(null)}
       />

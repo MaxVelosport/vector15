@@ -581,6 +581,7 @@ function PromoCodesTab({ activeTab }: { activeTab: string }) {
         title="Удалить промокод?"
         description="Промокод будет удалён. Уже использованные скидки останутся в силе."
         confirmText="Удалить"
+        destructive={true}
         onConfirm={() => { deleteMut.mutate(pendingDeletePromoId!); setPendingDeletePromoId(null); }}
         onCancel={() => setPendingDeletePromoId(null)}
       />
@@ -1145,6 +1146,7 @@ function PaymentsTab({ activeTab }: { activeTab: string }) {
         title={`Оформить возврат ${pendingRefund?.amount?.toLocaleString("ru-RU") ?? ""} ₽?`}
         description="Возврат будет выполнен через ЮKassa. Баланс ученика будет уменьшен на сумму возврата."
         confirmText="Оформить возврат"
+        destructive={true}
         onConfirm={() => { refundMut.mutate(pendingRefund!.id); setPendingRefund(null); }}
         onCancel={() => setPendingRefund(null)}
       />

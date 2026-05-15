@@ -31,7 +31,7 @@ export function ConfirmDialog({
   description,
   confirmText = "Подтвердить",
   cancelText = "Отмена",
-  destructive = true,
+  destructive = false,
 }: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={(o) => { if (!o) onCancel(); }}>

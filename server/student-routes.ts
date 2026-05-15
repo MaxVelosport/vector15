@@ -60,7 +60,7 @@ export function registerStudentRoutes(app: Express) {
   // ======= STUDENT AUTH =======
 
   // POST /api/student/auth/login - Вход ученика по email/паролю
-  app.post("/api/student/auth/login", async (req, res) => {
+  app.post("/api/student/auth/login", authLimiter, async (req, res) => {
     try {
       const schema = z.object({
         email: z.string().min(1),
@@ -110,7 +110,7 @@ export function registerStudentRoutes(app: Express) {
   // POST /api/student/auth/telegram-webapp - Авторизация через Telegram Mini App
   // Принимает initData (подписанная Telegram строка), валидирует HMAC,
   // находит ученика по telegramChatId и создаёт сессию.
-  app.post("/api/student/auth/telegram-webapp", async (req, res) => {
+  app.post("/api/student/auth/telegram-webapp", authLimiter, async (req, res) => {
     try {
       const { initData } = z.object({ initData: z.string().min(1) }).parse(req.body);
 

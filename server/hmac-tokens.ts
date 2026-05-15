@@ -1,4 +1,4 @@
-import { createHmac } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 
 // Секрет для подписи токенов доступа учеников. В продакшене обязателен —
 // иначе любой, кто знает дефолт, сможет подделать токен и зайти в чужой кабинет.
@@ -46,7 +46,7 @@ export function verifyStudentToken(token: string): DecodedToken | null {
     const payload = parts.slice(0, parts.length - 1).join(":");
     const expectedHmac = createHmac("sha256", SECRET).update(payload).digest("hex");
 
-    if (hmacPart !== expectedHmac) return null;
+    if (!timingSafeEqual(Buffer.from(hmacPart), Buffer.from(expectedHmac))) return null;
 
     const payloadParts = payload.split(":");
     if (payloadParts.length < 2) return null;
@@ -82,7 +82,7 @@ export function verifyParentChatToken(token: string): DecodedToken | null {
     const hmacPart = parts[parts.length - 1];
     const payload = parts.slice(0, parts.length - 1).join(":");
     const expectedHmac = createHmac("sha256", SECRET).update(payload).digest("hex");
-    if (hmacPart !== expectedHmac) return null;
+    if (!timingSafeEqual(Buffer.from(hmacPart), Buffer.from(expectedHmac))) return null;
 
     const expiry = parseInt(parts[parts.length - 2]);
     const studentId = parts.slice(1, parts.length - 2).join(":");

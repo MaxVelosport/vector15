@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ export default function QuizzesPage() {
   useDocumentTitle("Тренажёры");
   const [createOpen, setCreateOpen] = useState(false);
   const [viewQuiz, setViewQuiz] = useState<Quiz | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const { data: quizzes = [], isLoading } = useQuery<Quiz[]>({ queryKey: ["/api/quizzes"] });
   const { data: students = [] } = useQuery<Student[]>({ queryKey: ["/api/students"] });
@@ -90,7 +92,7 @@ export default function QuizzesPage() {
                       <Button size="sm" variant="outline" onClick={() => setViewQuiz(q)} data-testid={`button-view-quiz-${q.id}`} className="gap-1.5">
                         <Eye className="h-3.5 w-3.5" /> Посмотреть
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => deleteMut.mutate(q.id)} data-testid={`button-delete-quiz-${q.id}`} className="text-destructive">
+                      <Button size="sm" variant="ghost" onClick={() => setPendingDeleteId(q.id)} data-testid={`button-delete-quiz-${q.id}`} className="text-destructive">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
@@ -139,6 +141,15 @@ export default function QuizzesPage() {
 
       <CreateQuizDialog open={createOpen} onOpenChange={setCreateOpen} students={students} />
       <ViewQuizDialog quiz={viewQuiz} onClose={() => setViewQuiz(null)} studentName={studentName} />
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        title="Удалить тренажёр?"
+        description="Это действие необратимо. Все результаты прохождений будут удалены."
+        confirmText="Удалить"
+        destructive={true}
+        onConfirm={() => { if (pendingDeleteId) deleteMut.mutate(pendingDeleteId); setPendingDeleteId(null); }}
+        onCancel={() => setPendingDeleteId(null)}
+      />
       </div>
     </DashboardLayout>
   );

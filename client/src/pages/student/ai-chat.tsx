@@ -412,7 +412,7 @@ export default function StudentAiChat({ studentSubject, activeHomeworkId, onClea
   const activeChat = chats.find(c => c.id === activeChatId);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] min-h-[400px]">
+    <div className="flex flex-col h-[calc(100svh-140px)] min-h-[400px]">
       <div className="flex flex-col gap-2 mb-3">
         <div className="flex items-center justify-between">
           <div>

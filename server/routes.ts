@@ -4,7 +4,7 @@ import { validatePromoForScope, calculatePromoDiscountKop, type PromoValidationR
 import { findAiPackageOption } from "./ai-packages-pricing";
 import type { Express } from "express";
 import type { Server } from "http";
-import { randomUUID } from "crypto";
+import { randomUUID, randomInt } from "crypto";
 import { storage } from "./storage";
 import { hashPassword, verifyPassword, requireAuth, requireAdmin, requireEmailVerified } from "./auth";
 import { z } from "zod";
@@ -23,7 +23,7 @@ const voiceUpload = multer({
 import { setupBoardWebSocket, generateBoardWsToken } from "./board-ws";
 import { generateCalendarToken, verifyCalendarToken, buildICalendar } from "./calendar-ics";
 import { generateParentChatToken, verifyParentChatToken } from "./hmac-tokens";
-import { publicLimiter, healthLimiter } from "./rate-limit";
+import { publicLimiter, healthLimiter, authLimiter } from "./rate-limit";
 
 // Per-tutor async mutex to serialize student-count-sensitive operations
 const _tutorLocks = new Map<string, Promise<void>>();
@@ -280,7 +280,7 @@ export async function registerRoutes(
 
       // 2FA check: if enabled, require code verification step
       if ((tutor as any).twoFactorEnabled) {
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const code = randomInt(100000, 1000000).toString();
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
         await storage.createTwoFactorCode(tutor.id, code, expiresAt);
 
@@ -460,7 +460,7 @@ export async function registerRoutes(
   });
 
   // POST /api/auth/2fa/verify - Завершение входа после ввода кода из email
-  app.post("/api/auth/2fa/verify", async (req, res) => {
+  app.post("/api/auth/2fa/verify", authLimiter, async (req, res) => {
     try {
       const { code } = z.object({ code: z.string().min(4).max(10) }).parse(req.body);
       const pendingId = (req.session as any).pending2faTutorId;
@@ -494,7 +494,7 @@ export async function registerRoutes(
       const tutor = await storage.getTutor(pendingId);
       if (!tutor) return res.status(404).json({ error: "Не найдено" });
 
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const code = randomInt(100000, 1000000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
       await storage.createTwoFactorCode(tutor.id, code, expiresAt);
 
@@ -4781,7 +4781,8 @@ ${tutor.name}`;
     try {
       const expected = botManager.getWebhookSecret();
       const got = req.get("x-telegram-bot-api-secret-token") || "";
-      if (!expected || got !== expected) {
+      const { timingSafeEqual: tse } = await import("crypto");
+      if (!expected || got.length !== expected.length || !tse(Buffer.from(got), Buffer.from(expected))) {
         return res.status(401).end();
       }
       // Acknowledge immediately so Telegram doesn't retry; processing is async.
@@ -4851,7 +4852,7 @@ ${tutor.name}`;
   });
 
   // POST /api/telegram/admin/token — platform admin sets bot token
-  app.post("/api/telegram/admin/token", requireAuth, async (req, res) => {
+  app.post("/api/telegram/admin/token", requireAdmin, async (req, res) => {
     try {
       const { token } = z.object({ token: z.string().min(10) }).parse(req.body);
       await storage.setAiSetting("telegram_bot_token", token);
@@ -4863,7 +4864,7 @@ ${tutor.name}`;
   });
 
   // DELETE /api/telegram/admin/token — remove platform bot token and stop bot
-  app.delete("/api/telegram/admin/token", requireAuth, async (req, res) => {
+  app.delete("/api/telegram/admin/token", requireAdmin, async (req, res) => {
     try {
       await botManager.stop();
       await storage.setAiSetting("telegram_bot_token", "");

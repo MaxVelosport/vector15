@@ -1497,6 +1497,7 @@ export default function TasksPage() {
         title="Удалить вариант?"
         description="Вариант будет удалён безвозвратно."
         confirmText="Удалить"
+        destructive={true}
         onConfirm={() => { deleteMutation.mutate(pendingDeleteVariantId!); setPendingDeleteVariantId(null); }}
         onCancel={() => setPendingDeleteVariantId(null)}
       />

@@ -281,6 +281,11 @@ export default function StudentsPage() {
 
   const getEffectiveBalance = (studentId: string) => effectiveBalanceMap.get(studentId) ?? 0;
 
+  const bbbConferencesMap = useMemo(
+    () => new Map(bbbConferences.map((c) => [c.studentId, c])),
+    [bbbConferences],
+  );
+
   const completedCountMap = useMemo(() => {
     const map = new Map<string, number>();
     for (const l of lessons) {
@@ -314,8 +319,8 @@ export default function StudentsPage() {
     } catch { setAvatarUploading(false); }
   };
 
-  const activeStudents = students.filter((s) => s.isActive);
-  const archivedStudents = students.filter((s) => !s.isActive);
+  const activeStudents = useMemo(() => students.filter((s) => s.isActive), [students]);
+  const archivedStudents = useMemo(() => students.filter((s) => !s.isActive), [students]);
 
   const [studentFilter, setStudentFilter] = useState("");
   const [subjectFilter, setSubjectFilter] = useState("");
@@ -1248,7 +1253,7 @@ export default function StudentsPage() {
                   const s = displayedStudents[virtualItem.index];
                   const completed = completedCountMap.get(s.id) ?? 0;
                   const bal = getEffectiveBalance(s.id);
-                  const bbbConf = bbbConferences.find(c => c.studentId === s.id);
+                  const bbbConf = bbbConferencesMap.get(s.id);
                   return (
                     <div
                       key={s.id}
@@ -1261,10 +1266,7 @@ export default function StudentsPage() {
                         paddingBottom: "8px",
                       }}
                     >
-                      <motion.button
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.15 }}
+                      <button
                         className={cn(
                           "w-full rounded-2xl border border-border/50 p-4 text-left transition-all duration-200",
                           "hover:bg-accent/50 hover:shadow-md hover:border-primary/30",
@@ -1411,7 +1413,7 @@ export default function StudentsPage() {
                             <ArrowRight className="h-4 w-4 text-muted-foreground" />
                           </div>
                         </div>
-                      </motion.button>
+                      </button>
                     </div>
                   );
                 })}
@@ -3911,6 +3913,7 @@ export default function StudentsPage() {
         title={`Удалить ${pendingDeleteSlot?.count ?? ""} занятий?`}
         description={`Все занятия в ${pendingDeleteSlot?.day} в ${pendingDeleteSlot?.time} будут удалены безвозвратно.`}
         confirmText="Удалить всё"
+        destructive={true}
         onConfirm={() => {
           pendingDeleteSlot?.lessonIds.forEach(id => deleteLesson.mutate(id));
           toast.success(`Удалено ${pendingDeleteSlot?.count} занятий`);

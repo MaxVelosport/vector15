@@ -1600,6 +1600,7 @@ function ReviewsModeration() {
       title="Удалить отзыв?"
       description="Отзыв будет удалён безвозвратно."
       confirmText="Удалить"
+      destructive={true}
       onConfirm={() => { deleteMut.mutate(pendingDeleteReviewId!); setPendingDeleteReviewId(null); }}
       onCancel={() => setPendingDeleteReviewId(null)}
     />

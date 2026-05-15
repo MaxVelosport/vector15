@@ -5,6 +5,7 @@ import { PageHero } from "@/components/page-hero";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/lib/toast";
@@ -79,9 +80,17 @@ export default function CommPage() {
 
   if (isLoading) {
     return (
-      <DashboardLayout title="Рассылки" subtitle="Загрузка...">
-        <div className="flex items-center justify-center py-20">
-          <div className="text-muted-foreground">Загрузка...</div>
+      <DashboardLayout title="Рассылки" subtitle="Массовые уведомления ученикам по email и мессенджерам.">
+        <div className="space-y-4">
+          <Card className="rounded-2xl"><CardContent className="pt-4 space-y-3">
+            <Skeleton className="h-5 w-36" />
+            <Skeleton className="h-32 w-full rounded-xl" />
+            <div className="flex gap-2">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-9 w-28 rounded-xl" />)}</div>
+          </CardContent></Card>
+          <Card className="rounded-2xl"><CardContent className="pt-4 space-y-2">
+            <Skeleton className="h-5 w-40 mb-3" />
+            {[...Array(4)].map((_, i) => <div key={i} className="flex items-center gap-3 py-2"><Skeleton className="h-8 w-8 rounded-full" /><Skeleton className="h-4 w-40" /><Skeleton className="h-6 w-16 ml-auto" /></div>)}
+          </CardContent></Card>
         </div>
       </DashboardLayout>
     );

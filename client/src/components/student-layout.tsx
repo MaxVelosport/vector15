@@ -578,6 +578,7 @@ function TelegramManagerButton() {
         title="Отключить Telegram?"
         description="Уведомления через Telegram будут отключены. Вы сможете подключить его снова."
         confirmText="Отключить"
+        destructive={true}
         onConfirm={() => { unlink.mutate(); setConfirmUnlinkOpen(false); }}
         onCancel={() => setConfirmUnlinkOpen(false)}
       />

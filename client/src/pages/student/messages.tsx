@@ -129,7 +129,7 @@ export default function StudentMessages() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto flex flex-col gap-4" style={{ height: "calc(100vh - 180px)" }}>
+    <div className="max-w-2xl mx-auto flex flex-col gap-4" style={{ height: "calc(100svh - 180px)" }}>
       <div className="flex items-start gap-2 rounded-xl bg-blue-500/5 border border-blue-500/10 px-4 py-2.5">
         <MessageCircle className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
         <p className="text-xs text-muted-foreground">
