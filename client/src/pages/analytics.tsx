@@ -623,7 +623,7 @@ export default function AnalyticsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex h-64 items-end gap-2 pb-1">
+            <div className="flex h-48 sm:h-64 items-end gap-2 pb-1">
               {chartMonths.map((m) => {
                 const goalH = maxChartVal > 0 ? (m.goal / maxChartVal) * 100 : 0;
                 const forecastH = maxChartVal > 0 ? (m.forecast / maxChartVal) * 100 : 0;

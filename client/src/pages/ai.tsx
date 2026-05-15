@@ -700,6 +700,7 @@ export default function AIPage() {
                         className="gap-1 h-7 text-xs"
                         onClick={handleNewChat}
                         disabled={isAtLimit}
+                        title={isAtLimit ? `Достигнут лимит ${MAX_CHATS} чатов. Удалите старые чаты, чтобы создать новый.` : undefined}
                       >
                         <Plus className="h-3 w-3" />
                         Новый
