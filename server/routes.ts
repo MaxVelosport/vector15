@@ -1,4 +1,5 @@
 import { sendAdminAlert } from './admin-alerts';
+import { logger } from "./logger";
 import { validatePromoForScope, calculatePromoDiscountKop, type PromoValidationReason } from "./promo-pricing";
 import { findAiPackageOption } from "./ai-packages-pricing";
 import type { Express } from "express";
@@ -239,7 +240,7 @@ export async function registerRoutes(
               </div>`,
             });
           }
-        } catch (e) { console.error("Verification email error:", e); }
+        } catch (e) { logger.error({ err: e }, "Verification email error:"); }
       });
 
       res.json({ id: tutor.id, email: tutor.email, name: tutor.name });
@@ -307,7 +308,7 @@ export async function registerRoutes(
                 <p>Код действителен 10 минут. Если вы не пытались войти — смените пароль.</p>
               </div>`,
             });
-          } catch (e) { console.error("2FA email error:", e); }
+          } catch (e) { logger.error({ err: e }, "2FA email error:"); }
         }
 
         // Store pending auth in session (not yet logged in)
@@ -1302,7 +1303,7 @@ export async function registerRoutes(
     invalidateBbbCache();
     // Если изменились BBB настройки — авто-создаём комнаты для всех учеников
     if (data.bbb_url !== undefined || data.bbb_secret !== undefined) {
-      ensureConferencesForAllTutors().catch((e) => console.error("[BBB] ensureConferences failed:", e?.message || e));
+      ensureConferencesForAllTutors().catch((e) => logger.error({ err: e?.message || e }, "[BBB] ensureConferences failed"));
     }
     const updated = await storage.getAiSettings();
     res.json(updated);
@@ -1535,7 +1536,7 @@ export async function registerRoutes(
 
       res.json({ success: true, programData });
     } catch (error: any) {
-      console.error("Error generating program:", error);
+      logger.error({ err: error }, "Error generating program:");
       res.status(500).json({ error: error.message });
     }
   });
@@ -1675,7 +1676,7 @@ ${examContext}
       const result = JSON.parse(completion.choices[0]?.message?.content || '{}');
       res.json(result);
     } catch (error: any) {
-      console.error("Error generating lesson:", error);
+      logger.error({ err: error }, "Error generating lesson:");
       res.status(500).json({ error: error.message });
     }
   });
@@ -1752,7 +1753,7 @@ ${studentCtx ? `${studentCtx}` : ""}
       const result = JSON.parse(completion.choices[0]?.message?.content || "{}");
       res.json(result);
     } catch (error: any) {
-      console.error("Error generating plan:", error);
+      logger.error({ err: error }, "Error generating plan:");
       res.status(500).json({ error: error.message });
     }
   });
@@ -1817,7 +1818,7 @@ ${examContext}
       const result = JSON.parse(completion.choices[0]?.message?.content || '{}');
       res.json(result);
     } catch (error: any) {
-      console.error("Error generating homework:", error);
+      logger.error({ err: error }, "Error generating homework:");
       res.status(500).json({ error: error.message });
     }
   });
@@ -1868,7 +1869,7 @@ ${context ? `Контекст: ${context}` : ""}
       const response = completion.choices[0]?.message?.content || "Извините, не удалось получить ответ.";
       res.json({ response });
     } catch (error: any) {
-      console.error("Error in AI chat:", error);
+      logger.error({ err: error }, "Error in AI chat:");
       res.status(500).json({ error: error.message });
     }
   });
@@ -2023,7 +2024,7 @@ A: Кнопка ⇄ рядом с занятием → выбрать новое
       const reply = completion.choices[0]?.message?.content || "Извините, не смог ответить.";
       res.json({ reply });
     } catch (error: any) {
-      console.error("Help chat error:", error);
+      logger.error({ err: error }, "Help chat error:");
       res.status(500).json({ error: error.message || "Ошибка ИИ-ассистента" });
     }
   });
@@ -2164,7 +2165,7 @@ A: Кнопка ⇄ рядом с занятием → выбрать новое
         yookassaPaymentId: payment.id,
       });
     } catch (error: any) {
-      console.error("AI package purchase error:", error);
+      logger.error({ err: error }, "AI package purchase error:");
       res.status(500).json({ error: error.message || "Ошибка создания платежа" });
     }
   });
@@ -2230,7 +2231,7 @@ A: Кнопка ⇄ рядом с занятием → выбрать новое
         pricePerStudent,
       });
     } catch (error: any) {
-      console.error("Extra students purchase error:", error);
+      logger.error({ err: error }, "Extra students purchase error:");
       res.status(500).json({ error: error.message || "Ошибка создания платежа" });
     }
   });
@@ -2453,7 +2454,7 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
 
       res.json(savedMessage);
     } catch (error: any) {
-      console.error("Tutor AI Chat error:", error);
+      logger.error({ err: error }, "Tutor AI Chat error:");
       res.status(500).json({ error: error.message });
     }
   });
@@ -2500,7 +2501,7 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
       if (error?.name === 'ZodError') {
         return res.status(400).json({ error: "Проверьте поля занятия", issues: error.issues });
       }
-      console.error("POST /api/lessons error:", error);
+      logger.error({ err: error }, "POST /api/lessons error:");
       return res.status(500).json({ error: "Внутренняя ошибка сервера" });
     }
   });
@@ -2726,7 +2727,7 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
 
       res.json({ updated: updated.length, lessons: updated });
     } catch (error: any) {
-      console.error("Bulk reschedule error:", error);
+      logger.error({ err: error }, "Bulk reschedule error:");
       res.status(500).json({ error: error.message || "Internal error" });
     }
   });
@@ -2764,7 +2765,7 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
       }
       res.json({ created: created.length, lessons: created });
     } catch (error: any) {
-      console.error("Bulk create error:", error);
+      logger.error({ err: error }, "Bulk create error:");
       res.status(500).json({ error: error.message || "Internal error" });
     }
   });
@@ -2779,7 +2780,7 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
       await storage.deleteLesson(req.params.id);
       res.json({ success: true });
     } catch (error: any) {
-      console.error("DELETE /api/lessons error:", error);
+      logger.error({ err: error }, "DELETE /api/lessons error:");
       return res.status(500).json({ error: "Внутренняя ошибка сервера" });
     }
   });
@@ -2929,7 +2930,7 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
       if (error?.name === 'ZodError') {
         return res.status(400).json({ error: "Проверьте поля платежа", issues: error.issues });
       }
-      console.error("POST /api/payments error:", error);
+      logger.error({ err: error }, "POST /api/payments error:");
       return res.status(500).json({ error: "Внутренняя ошибка сервера" });
     }
   });
@@ -2958,7 +2959,7 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
 
       res.json({ success: true });
     } catch (error: any) {
-      console.error("Delete payment error:", error);
+      logger.error({ err: error }, "Delete payment error:");
       res.status(500).json({ error: error.message || "Internal error" });
     }
   });
@@ -3069,7 +3070,7 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
         yookassaPaymentId: payment.id,
       });
     } catch (error: any) {
-      console.error("YooKassa student payment error:", error);
+      logger.error({ err: error }, "YooKassa student payment error:");
       res.status(500).json({ error: error.message || "Ошибка создания платежа" });
     }
   });
@@ -3091,13 +3092,13 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
             headers: { Authorization: `Basic ${auth}` },
           });
           if (!verifyRes.ok) {
-            console.warn("[YooKassa webhook] verify FAILED status=", verifyRes.status, "paymentId=", yp.id);
+            logger.warn({ status: verifyRes.status, paymentId: yp.id }, "[YooKassa webhook] verify FAILED");
             return res.status(403).json({ error: "Untrusted webhook (payment not found at YooKassa)" });
           }
           const verified = await verifyRes.json();
           // Проверяем критичные поля из ответа ЮКассы, не доверяя телу webhook
           if (verified.status !== yp.status || verified.id !== yp.id) {
-            console.warn("[YooKassa webhook] mismatch verified=", verified.status, verified.id, "vs", yp.status, yp.id);
+            logger.warn({ verifiedStatus: verified.status, verifiedId: verified.id, webhookStatus: yp.status, webhookId: yp.id }, "[YooKassa webhook] status mismatch");
             return res.status(403).json({ error: "Untrusted webhook (mismatch with YooKassa)" });
           }
           // Перезаписываем yp/meta из проверенного источника
@@ -3105,7 +3106,7 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
           Object.assign(yp, verified);
           Object.assign(meta, verified.metadata || {});
         } catch (vErr) {
-          console.error("[YooKassa webhook] verify error:", vErr);
+          logger.error({ err: vErr }, "[YooKassa webhook] verify error");
           return res.status(503).json({ error: "Could not verify webhook with YooKassa" });
         }
       }
@@ -3117,7 +3118,7 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
         if (yp?.id) {
           const fresh = await storage.tryMarkWebhookEventProcessed(yp.id, 'yookassa');
           if (!fresh) {
-            console.log("[YooKassa webhook] duplicate event ignored:", yp.id);
+            logger.info({ paymentId: yp.id }, "[YooKassa webhook] duplicate event ignored");
             sendAdminAlert('critical', 'Duplicate ЮKassa webhook detected', {
               errorMessage: `payment_id=${yp.id}, type=${meta?.type || 'unknown'}, amount=${yp.amount?.value || '?'}`,
               userId: meta?.tutorId || meta?.studentId,
@@ -3198,7 +3199,7 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
                   await storage.incrementPromoCodeUse(meta.promoCodeId);
                 }
               } catch (e) {
-                console.error("[promo-redemption] failed:", e);
+                logger.error({ err: e }, "[promo-redemption] failed:");
               }
             }
             await storage.createNotification({
@@ -3253,7 +3254,7 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
 
       res.status(200).send();
     } catch (error: any) {
-      console.error("YooKassa webhook error:", error);
+      logger.error({ err: error }, "YooKassa webhook error:");
       res.status(500).json({ error: error.message });
     }
   };
@@ -3337,7 +3338,7 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
 
       res.json({ success: true, created, total: attendedLessons.length });
     } catch (error: any) {
-      console.error("Payment migration error:", error);
+      logger.error({ err: error }, "Payment migration error:");
       res.status(500).json({ error: error.message || "Internal error" });
     }
   });
@@ -3425,7 +3426,7 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
       if (error?.name === 'ZodError') {
         return res.status(400).json({ error: "Проверьте поля домашнего задания", issues: error.issues });
       }
-      console.error("POST /api/homework error:", error);
+      logger.error({ err: error }, "POST /api/homework error:");
       return res.status(500).json({ error: "Внутренняя ошибка сервера" });
     }
   });
@@ -3829,7 +3830,7 @@ ${chat.context ? `\nКонтекст чата: ${chat.context}` : ""}
         confirmationUrl: payment.confirmation?.confirmation_url,
       });
     } catch (error: any) {
-      console.error("YooKassa error:", error);
+      logger.error({ err: error }, "YooKassa error:");
       res.status(500).json({ error: error.message });
     }
   });
@@ -4686,7 +4687,7 @@ ${tutor.name}`;
 
       res.json({ success: true, message: "Уведомление отправлено" });
     } catch (error: any) {
-      console.error("Email send error:", error);
+      logger.error({ err: error }, "Email send error:");
       res.status(500).json({ error: error.message || "Ошибка отправки email" });
     }
   });
@@ -4766,7 +4767,7 @@ ${tutor.name}`;
         });
         res.json({ text: (result as any).text || "" });
       } catch (e: any) {
-        console.error("voice/transcribe error:", e?.message);
+        logger.error({ err: e?.message }, "voice/transcribe error");
         res.status(500).json({ error: e?.message || "Не удалось распознать речь" });
       }
     }
@@ -4788,7 +4789,7 @@ ${tutor.name}`;
       botManager.processUpdate(req.body);
     } catch (e: any) {
       // Already responded above, log only.
-      console.error("telegram webhook error:", e?.message);
+      logger.error({ err: e?.message }, "telegram webhook error");
     }
   });
 
@@ -5113,7 +5114,7 @@ ${tutor.name}`;
       }));
       res.json(result);
     } catch (err: any) {
-      console.error("Boards API error:", err?.message || err);
+      logger.error({ err: err?.message || err }, "Boards API error");
       res.status(500).json({ error: "Ошибка загрузки досок" });
     }
   });
@@ -5839,7 +5840,7 @@ ${tutor.name}`;
         const newMeetingId = `vektor-${tutorId.slice(0, 8)}-${randomUUID().slice(0, 8)}`;
         const newAttendeePw = randomUUID().slice(0, 12);
         const newModeratorPw = randomUUID().slice(0, 12);
-        await endBbbMeeting(conf.meetingId, conf.moderatorPw).catch((e) => console.error("[BBB] endMeeting failed:", e?.message || e));
+        await endBbbMeeting(conf.meetingId, conf.moderatorPw).catch((e) => logger.error({ err: e?.message || e }, "[BBB] endMeeting failed"));
         await storage.updateConference(conf.id, {
           meetingId: newMeetingId,
           attendeePw: newAttendeePw,
@@ -5911,7 +5912,7 @@ ${tutor.name}`;
         return res.status(404).json({ error: "Конференция не найдена" });
       }
       // Завершаем встречу на BBB если активна
-      await endBbbMeeting(conference.meetingId, conference.moderatorPw).catch((e) => console.error("[BBB] endMeeting failed:", e?.message || e));
+      await endBbbMeeting(conference.meetingId, conference.moderatorPw).catch((e) => logger.error({ err: e?.message || e }, "[BBB] endMeeting failed"));
       // Удаляем из БД
       await storage.deleteConference(conference.id);
       res.json({ success: true });
@@ -5932,7 +5933,7 @@ ${tutor.name}`;
       // Если встреча не запущена — пересоздаём её, чтобы репетитор вошёл первым и стал презентером
       const isRunning = await isBbbMeetingRunning(conference.meetingId);
       if (!isRunning) {
-        await endBbbMeeting(conference.meetingId, conference.moderatorPw).catch((e) => console.error("[BBB] endMeeting failed:", e?.message || e));
+        await endBbbMeeting(conference.meetingId, conference.moderatorPw).catch((e) => logger.error({ err: e?.message || e }, "[BBB] endMeeting failed"));
         await createBbbMeeting(
           conference.meetingId, conference.title,
           conference.attendeePw, conference.moderatorPw
@@ -6005,7 +6006,7 @@ ${tutor.name}`;
         return res.status(404).json({ error: "Конференция не найдена" });
       }
       // Завершаем текущую встречу
-      await endBbbMeeting(conference.meetingId, conference.moderatorPw).catch((e) => console.error("[BBB] endMeeting failed:", e?.message || e));
+      await endBbbMeeting(conference.meetingId, conference.moderatorPw).catch((e) => logger.error({ err: e?.message || e }, "[BBB] endMeeting failed"));
       // Создаём заново — все пересоздаются с новыми настройками (разрешения аннотаций)
       const result = await createBbbMeeting(
         conference.meetingId, conference.title,
@@ -6027,7 +6028,7 @@ ${tutor.name}`;
         return res.status(404).json({ error: "Конференция не найдена" });
       }
       // Завершаем старую встречу на BBB если активна
-      await endBbbMeeting(conference.meetingId, conference.moderatorPw).catch((e) => console.error("[BBB] endMeeting failed:", e?.message || e));
+      await endBbbMeeting(conference.meetingId, conference.moderatorPw).catch((e) => logger.error({ err: e?.message || e }, "[BBB] endMeeting failed"));
       // Генерируем новые данные
       const newMeetingId = `vektor-${tutorId.slice(0, 8)}-${randomUUID().slice(0, 8)}`;
       const newAttendeePw = randomUUID().slice(0, 12);
@@ -7168,7 +7169,7 @@ ${tutor.name}`;
 
       res.json({ success: true, created: { students: createdStudents.length, lessons: lessonsCount, payments: paymentsCount } });
     } catch (error: any) {
-      console.error("[load-demo]", error);
+      logger.error({ err: error }, "[load-demo]");
       res.status(500).json({ error: "Не удалось создать demo-данные: " + error.message });
     }
   });

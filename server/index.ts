@@ -4,7 +4,7 @@ import { sendAdminAlert } from "./admin-alerts";
 import { logger } from "./logger";
 
 process.on('uncaughtException', (err) => {
-  console.error('[uncaughtException]', err);
+  logger.error({ errorMessage: err.message, stack: err.stack?.split('\n').slice(0, 8).join('\n') }, '[uncaughtException]');
   sendAdminAlert('critical', 'UNCAUGHT EXCEPTION', {
     errorMessage: err.message,
     stack: err.stack?.split('\n').slice(0, 8).join('\n'),
@@ -12,7 +12,7 @@ process.on('uncaughtException', (err) => {
 });
 
 process.on('unhandledRejection', (reason: any) => {
-  console.error('[unhandledRejection]', reason);
+  logger.error({ errorMessage: reason?.message || String(reason), stack: reason?.stack?.split('\n').slice(0, 8).join('\n') }, '[unhandledRejection]');
   sendAdminAlert('critical', 'UNHANDLED PROMISE REJECTION', {
     errorMessage: reason?.message || String(reason),
     stack: reason?.stack?.split('\n').slice(0, 8).join('\n'),
