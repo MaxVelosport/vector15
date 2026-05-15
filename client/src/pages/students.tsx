@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { useLocation, useSearch } from "wouter";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   AlertTriangle,
   ArrowRight,
@@ -278,6 +279,17 @@ export default function StudentsPage() {
   }, [students, lessons, payments]);
 
   const getEffectiveBalance = (studentId: string) => effectiveBalanceMap.get(studentId) ?? 0;
+
+  const completedCountMap = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const l of lessons) {
+      if (l.status === "completed") {
+        map.set(l.studentId, (map.get(l.studentId) ?? 0) + 1);
+      }
+    }
+    return map;
+  }, [lessons]);
+
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
 
@@ -1006,6 +1018,14 @@ export default function StudentsPage() {
       });
   }, [showArchived, archivedStudents, activeStudents, studentFilter, subjectFilter, sortBy, effectiveBalanceMap]);
 
+  const studentListRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: displayedStudents.length,
+    getScrollElement: () => studentListRef.current,
+    estimateSize: () => 96,
+    overscan: 5,
+  });
+
   if (isLoading) {
     return (
       <DashboardLayout title="Ученики" subtitle="Загрузка...">
@@ -1205,47 +1225,57 @@ export default function StudentsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="max-h-[550px] space-y-2 overflow-y-auto pr-1">
-              <AnimatePresence mode="popLayout">
-                {displayedStudents.map((s, idx) => (
-                  <motion.button
-                    key={s.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ delay: idx * 0.03 }}
-                    className={cn(
-                      "w-full rounded-2xl border border-border/50 p-4 text-left transition-all duration-200",
-                      "hover:bg-accent/50 hover:shadow-md hover:border-primary/30",
-                      "bg-card/60",
-                    )}
-                    onClick={() => { setSelectedStudentId(s.id); setShowProfileDialog(true); }}
-                    data-testid={`card-student-${s.id}`}
-                  >
-                    <div className="flex items-center gap-4">
-                      {(s as any).avatar ? (
-                        <img src={(s as any).avatar} alt={s.name} className="h-12 w-12 rounded-full object-cover shadow-lg" />
-                      ) : (
-                        <div className={cn("flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br text-white font-semibold text-sm shadow-lg", getAvatarColor(s.name))}>
-                          {getInitials(s.name)}
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <div className="truncate font-semibold">{s.name}</div>
-                        </div>
-                        <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1"><BookOpen className="h-3 w-3" />{s.subject}</span>
-                          <span>•</span>
-                          <span className="flex items-center gap-1"><Target className="h-3 w-3" />{s.goal}</span>
-                          <span>•</span>
-                          <span className="flex items-center gap-1"><GraduationCap className="h-3 w-3" />{s.grade}</span>
-                        </div>
-                        <div className="mt-1 flex items-center gap-2.5 text-[11px]">
-                          {(() => {
-                            const completed = lessons.filter(l => l.studentId === s.id && l.status === "completed").length;
-                            const bal = getEffectiveBalance(s.id);
-                            return (<>
+            <div ref={studentListRef} className="max-h-[550px] overflow-y-auto pr-1">
+              <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: "relative" }}>
+                {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+                  const s = displayedStudents[virtualItem.index];
+                  const completed = completedCountMap.get(s.id) ?? 0;
+                  const bal = getEffectiveBalance(s.id);
+                  const bbbConf = bbbConferences.find(c => c.studentId === s.id);
+                  return (
+                    <div
+                      key={s.id}
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        transform: `translateY(${virtualItem.start}px)`,
+                        paddingBottom: "8px",
+                      }}
+                    >
+                      <motion.button
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className={cn(
+                          "w-full rounded-2xl border border-border/50 p-4 text-left transition-all duration-200",
+                          "hover:bg-accent/50 hover:shadow-md hover:border-primary/30",
+                          "bg-card/60",
+                        )}
+                        onClick={() => { setSelectedStudentId(s.id); setShowProfileDialog(true); }}
+                        data-testid={`card-student-${s.id}`}
+                      >
+                        <div className="flex items-center gap-4">
+                          {(s as any).avatar ? (
+                            <img src={(s as any).avatar} alt={s.name} className="h-12 w-12 rounded-full object-cover shadow-lg" />
+                          ) : (
+                            <div className={cn("flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br text-white font-semibold text-sm shadow-lg", getAvatarColor(s.name))}>
+                              {getInitials(s.name)}
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <div className="truncate font-semibold">{s.name}</div>
+                            </div>
+                            <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                              <span className="flex items-center gap-1"><BookOpen className="h-3 w-3" />{s.subject}</span>
+                              <span>•</span>
+                              <span className="flex items-center gap-1"><Target className="h-3 w-3" />{s.goal}</span>
+                              <span>•</span>
+                              <span className="flex items-center gap-1"><GraduationCap className="h-3 w-3" />{s.grade}</span>
+                            </div>
+                            <div className="mt-1 flex items-center gap-2.5 text-[11px]">
                               <span className="flex items-center gap-0.5 text-emerald-600">
                                 <CheckCircle2 className="h-3 w-3" />{completed} занятий
                               </span>
@@ -1266,113 +1296,109 @@ export default function StudentsPage() {
                                     : <BellRing className="h-3 w-3" />}
                                 </button>
                               )}
-                            </>);
-                          })()}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1">
-                          {/* Внутренняя доска — всегда */}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setLocation(`/board/${s.id}`); }}
-                            title="Доска (внутр.)"
-                            className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-violet-500/10 hover:bg-violet-500/25 transition-colors"
-                            data-testid={`button-board-student-${s.id}`}
-                          >
-                            <LayoutGrid className="h-3 w-3 text-violet-600" />
-                          </button>
-                          {/* Внутренняя конференция BBB — всегда */}
-                          {(() => {
-                            const bbbConf = bbbConferences.find(c => c.studentId === s.id);
-                            if (bbbConf) return (
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
+                              {/* Внутренняя доска — всегда */}
                               <button
-                                onClick={(e) => { e.stopPropagation(); handleJoinBbb(bbbConf.id); }}
-                                disabled={joiningBbbId === bbbConf.id}
-                                title={`Конференция BBB${bbbConf.isRunning ? " (идёт)" : ""}`}
-                                className={cn("inline-flex h-6 w-6 items-center justify-center rounded-md transition-colors",
-                                  bbbConf.isRunning ? "bg-green-500/15 hover:bg-green-500/25" : "bg-blue-500/15 hover:bg-blue-500/25")}
-                                data-testid={`button-bbb-student-${s.id}`}
+                                onClick={(e) => { e.stopPropagation(); setLocation(`/board/${s.id}`); }}
+                                title="Доска (внутр.)"
+                                className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-violet-500/10 hover:bg-violet-500/25 transition-colors"
+                                data-testid={`button-board-student-${s.id}`}
                               >
-                                {joiningBbbId === bbbConf.id
-                                  ? <Loader2 className="h-3 w-3 animate-spin text-blue-600" />
-                                  : <Video className={cn("h-3 w-3", bbbConf.isRunning ? "text-green-500" : "text-blue-600")} />}
+                                <LayoutGrid className="h-3 w-3 text-violet-600" />
                               </button>
-                            );
-                            return (
-                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-muted/30" title="Конференция BBB (не настроена)">
-                                <Video className="h-3 w-3 text-muted-foreground/30" />
-                              </span>
-                            );
-                          })()}
-                          {/* Внешняя конференция — если есть */}
-                          {(s as any).links?.conference && (
-                            <a href={(() => { const l = (s as any).links.conference; return l.startsWith("http") ? l : `https://${l}`; })()} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} title="Конференция (внешн.)">
-                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-blue-500/8 hover:bg-blue-500/15 transition-colors">
-                                <Video className="h-3 w-3 text-blue-400" />
-                              </span>
-                            </a>
-                          )}
-                          {/* Внешняя доска — если есть */}
-                          {(s as any).links?.board ? (
-                            <a href={(() => { const l = (s as any).links.board; return l.startsWith("http") ? l : `https://${l}`; })()} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} title="Доска (внешн.)">
-                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-violet-500/8 hover:bg-violet-500/15 transition-colors">
-                                <PenLine className="h-3 w-3 text-violet-400" />
-                              </span>
-                            </a>
-                          ) : null}
-                          {s.hasProgram ? (
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/10" title="Есть план занятий">
-                              <FileText className="h-3 w-3 text-emerald-600" />
-                            </span>
-                          ) : (
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-muted/50" title="Нет плана занятий">
-                              <FileText className="h-3 w-3 text-muted-foreground/30" />
-                            </span>
-                          )}
-                          {(s as any).socialLink ? (
-                            <a href={(() => { const l = (s as any).socialLink; return l.startsWith("http") ? l : `https://${l}`; })()} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} title="Написать">
-                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-orange-500/10 hover:bg-orange-500/20 transition-colors">
-                                <MessageCircle className="h-3 w-3 text-orange-600" />
-                              </span>
-                            </a>
-                          ) : (
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-muted/50" title="Нет соцсети">
-                              <MessageCircle className="h-3 w-3 text-muted-foreground/30" />
-                            </span>
-                          )}
-                          {(s as any).parentLink ? (
-                            <a href={(() => { const l = (s as any).parentLink; return l.startsWith("http") ? l : `https://${l}`; })()} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} title="Родитель">
-                              <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-sky-500/10 hover:bg-sky-500/20 transition-colors">
-                                <Users className="h-3 w-3 text-sky-600" />
-                              </span>
-                            </a>
-                          ) : (
-                            <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-muted/50" title="Нет ссылки на родителя">
-                              <Users className="h-3 w-3 text-muted-foreground/30" />
-                            </span>
-                          )}
-                          {/* Внутренний чат */}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setLocation(`/chat?studentId=${s.id}`); }}
-                            title="Написать в чате"
-                            className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors"
-                            data-testid={`button-chat-student-${s.id}`}
-                          >
-                            <MessagesSquare className="h-3 w-3 text-emerald-600" />
-                          </button>
+                              {/* Внутренняя конференция BBB — всегда */}
+                              {bbbConf ? (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); handleJoinBbb(bbbConf.id); }}
+                                  disabled={joiningBbbId === bbbConf.id}
+                                  title={`Конференция BBB${bbbConf.isRunning ? " (идёт)" : ""}`}
+                                  className={cn("inline-flex h-6 w-6 items-center justify-center rounded-md transition-colors",
+                                    bbbConf.isRunning ? "bg-green-500/15 hover:bg-green-500/25" : "bg-blue-500/15 hover:bg-blue-500/25")}
+                                  data-testid={`button-bbb-student-${s.id}`}
+                                >
+                                  {joiningBbbId === bbbConf.id
+                                    ? <Loader2 className="h-3 w-3 animate-spin text-blue-600" />
+                                    : <Video className={cn("h-3 w-3", bbbConf.isRunning ? "text-green-500" : "text-blue-600")} />}
+                                </button>
+                              ) : (
+                                <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-muted/30" title="Конференция BBB (не настроена)">
+                                  <Video className="h-3 w-3 text-muted-foreground/30" />
+                                </span>
+                              )}
+                              {/* Внешняя конференция — если есть */}
+                              {(s as any).links?.conference && (
+                                <a href={(() => { const l = (s as any).links.conference; return l.startsWith("http") ? l : `https://${l}`; })()} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} title="Конференция (внешн.)">
+                                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-blue-500/8 hover:bg-blue-500/15 transition-colors">
+                                    <Video className="h-3 w-3 text-blue-400" />
+                                  </span>
+                                </a>
+                              )}
+                              {/* Внешняя доска — если есть */}
+                              {(s as any).links?.board ? (
+                                <a href={(() => { const l = (s as any).links.board; return l.startsWith("http") ? l : `https://${l}`; })()} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} title="Доска (внешн.)">
+                                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-violet-500/8 hover:bg-violet-500/15 transition-colors">
+                                    <PenLine className="h-3 w-3 text-violet-400" />
+                                  </span>
+                                </a>
+                              ) : null}
+                              {s.hasProgram ? (
+                                <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/10" title="Есть план занятий">
+                                  <FileText className="h-3 w-3 text-emerald-600" />
+                                </span>
+                              ) : (
+                                <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-muted/50" title="Нет плана занятий">
+                                  <FileText className="h-3 w-3 text-muted-foreground/30" />
+                                </span>
+                              )}
+                              {(s as any).socialLink ? (
+                                <a href={(() => { const l = (s as any).socialLink; return l.startsWith("http") ? l : `https://${l}`; })()} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} title="Написать">
+                                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-orange-500/10 hover:bg-orange-500/20 transition-colors">
+                                    <MessageCircle className="h-3 w-3 text-orange-600" />
+                                  </span>
+                                </a>
+                              ) : (
+                                <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-muted/50" title="Нет соцсети">
+                                  <MessageCircle className="h-3 w-3 text-muted-foreground/30" />
+                                </span>
+                              )}
+                              {(s as any).parentLink ? (
+                                <a href={(() => { const l = (s as any).parentLink; return l.startsWith("http") ? l : `https://${l}`; })()} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} title="Родитель">
+                                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-sky-500/10 hover:bg-sky-500/20 transition-colors">
+                                    <Users className="h-3 w-3 text-sky-600" />
+                                  </span>
+                                </a>
+                              ) : (
+                                <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-muted/50" title="Нет ссылки на родителя">
+                                  <Users className="h-3 w-3 text-muted-foreground/30" />
+                                </span>
+                              )}
+                              {/* Внутренний чат */}
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setLocation(`/chat?studentId=${s.id}`); }}
+                                title="Написать в чате"
+                                className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors"
+                                data-testid={`button-chat-student-${s.id}`}
+                              >
+                                <MessagesSquare className="h-3 w-3 text-emerald-600" />
+                              </button>
+                            </div>
+                            {(s as any).hasPortalAccess ? (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-emerald-50 text-emerald-600 border-emerald-200">
+                                <Key className="h-2.5 w-2.5 mr-0.5" />
+                                Доступ
+                              </Badge>
+                            ) : null}
+                            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                          </div>
                         </div>
-                        {(s as any).hasPortalAccess ? (
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5 bg-emerald-50 text-emerald-600 border-emerald-200">
-                            <Key className="h-2.5 w-2.5 mr-0.5" />
-                            Доступ
-                          </Badge>
-                        ) : null}
-                        <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                      </div>
+                      </motion.button>
                     </div>
-                  </motion.button>
-                ))}
-              </AnimatePresence>
+                  );
+                })}
+              </div>
               {displayedStudents.length === 0 && (
                 showArchived ? (
                   <div className="py-12 text-center text-muted-foreground">
