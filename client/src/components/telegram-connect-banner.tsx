@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import {
   Bot, X, Copy, RefreshCw, Timer, CheckCircle2, Send,
   MessageCircle, Loader2, ChevronDown, ChevronUp, Sparkles,

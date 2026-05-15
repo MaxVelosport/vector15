@@ -49,7 +49,7 @@ import { NotificationsPanel } from "@/components/notifications-panel";
 import { CommandSearch } from "@/components/command-search";
 import { SUBSCRIPTION_LIMITS } from "@shared/schema";
 import type { SubscriptionTier } from "@shared/schema";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 const TIER_COLORS: Record<SubscriptionTier, { bg: string; text: string; border: string; icon: string }> = {
   free: { bg: "bg-muted/60", text: "text-muted-foreground", border: "border-border/50", icon: "text-muted-foreground" },

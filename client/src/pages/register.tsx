@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UserPlus, User, Lock, Mail, Gift } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/lib/toast";
 
 import { useDocumentTitle } from "@/hooks/use-document-title";
 export default function Register() {
@@ -66,10 +66,7 @@ export default function Register() {
         return;
       }
 
-      toast({
-        title: "Регистрация успешна!",
-        description: "Добро пожаловать в Твой Вектор!",
-      });
+      toast.success("Регистрация успешна!", { description: "Добро пожаловать в Твой Вектор!" });
       setLocation("/login");
     } catch {
       setError("Ошибка соединения с сервером");

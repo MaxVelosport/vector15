@@ -43,7 +43,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 type StudentTab = "home" | "lessons" | "homework" | "quiz" | "progress" | "finance" | "ai" | "board" | "notes" | "messages" | "conference" | "help" | "tasks" | "profile" | "recordings";
 

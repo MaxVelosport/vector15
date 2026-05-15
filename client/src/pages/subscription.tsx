@@ -4,7 +4,7 @@ import { CalendarDays, Check, Crown, Diamond, Info, Minus, Package, Plus, Shoppi
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { apiRequest } from "@/lib/queryClient";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";

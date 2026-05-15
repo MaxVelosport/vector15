@@ -11,7 +11,7 @@ import { fireCelebration } from "@/lib/confetti";
 import { cn } from "@/lib/utils";
 import { useStudents, useCreateStudent } from "@/hooks/use-tutor-data";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/lib/toast";
 import { StudentsImportDialog } from "@/components/students-import-dialog";
 
 const STORAGE_KEY = "onboarding_wizard_v1";
@@ -53,7 +53,6 @@ export function OnboardingWizard() {
   });
   const createStudent = useCreateStudent();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   const updateProfile = useMutation({
     mutationFn: async (data: Partial<Tutor>) => {
@@ -122,7 +121,7 @@ export function OnboardingWizard() {
       await updateProfile.mutateAsync({ subjects, basePrice, scheduleStart, scheduleEnd });
       setStep(s => s + 1);
     } catch (e: any) {
-      toast({ title: "Ошибка", description: e.message, variant: "destructive" });
+      toast.error("Ошибка", { description: e.message });
     } finally {
       setSaving(false);
     }
@@ -130,7 +129,7 @@ export function OnboardingWizard() {
 
   const createFirstStudent = async () => {
     if (!firstStudent.name.trim()) {
-      toast({ title: "Введите имя ученика", variant: "destructive" });
+      toast.error("Введите имя ученика");
       return;
     }
     setSaving(true);
@@ -142,10 +141,10 @@ export function OnboardingWizard() {
         grade: firstStudent.grade,
         pricePerLesson: firstStudent.price,
       } as any);
-      toast({ title: "Ученик добавлен!", description: "Теперь можно запланировать первый урок." });
+      toast.success("Ученик добавлен!", { description: "Теперь можно запланировать первый урок."  });
       setStep(3);
     } catch (e: any) {
-      toast({ title: "Ошибка", description: e.message, variant: "destructive" });
+      toast.error("Ошибка", { description: e.message });
     } finally {
       setSaving(false);
     }

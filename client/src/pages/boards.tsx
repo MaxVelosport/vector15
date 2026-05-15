@@ -36,7 +36,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/lib/toast";
 
 import { useDocumentTitle } from "@/hooks/use-document-title";
 interface BoardEntry {
@@ -65,7 +65,6 @@ export default function BoardsPage() {
   useDocumentTitle("Доски");
   const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
-  const { toast } = useToast();
   const [tempBoards, setTempBoards] = useState<TempBoard[]>([]);
   const [creatingTemp, setCreatingTemp] = useState(false);
   const [search, setSearch] = useState("");
@@ -87,10 +86,10 @@ export default function BoardsPage() {
       apiRequest("DELETE", `/api/boards/${studentId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/boards"] });
-      toast({ title: "Доска очищена" });
+      toast.success("Доска очищена");
     },
     onError: () => {
-      toast({ title: "Ошибка", description: "Не удалось очистить доску", variant: "destructive" });
+      toast.error("Ошибка", { description: "Не удалось очистить доску" });
     },
   });
 
@@ -100,9 +99,9 @@ export default function BoardsPage() {
       const res = await apiRequest("POST", "/api/boards/temp");
       const data = await res.json();
       setTempBoards((prev) => [...prev, data]);
-      toast({ title: "Временная доска создана", description: "Ссылка готова к использованию" });
+      toast.success("Временная доска создана", { description: "Ссылка готова к использованию"  });
     } catch {
-      toast({ title: "Ошибка", description: "Не удалось создать временную доску", variant: "destructive" });
+      toast.error("Ошибка", { description: "Не удалось создать временную доску" });
     } finally {
       setCreatingTemp(false);
     }
@@ -195,7 +194,7 @@ export default function BoardsPage() {
                       className="gap-1.5 text-xs border-amber-500/30"
                       onClick={() => {
                         navigator.clipboard.writeText(window.location.origin + tb.boardUrl);
-                        toast({ title: "Ссылка скопирована" });
+                        toast.success("Ссылка скопирована");
                       }}
                       data-testid={`button-copy-temp-${tb.tempId}`}
                     >

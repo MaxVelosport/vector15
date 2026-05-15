@@ -6,7 +6,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Sparkles, GraduationCap, Compass, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useStudents } from "@/hooks/use-tutor-data";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 const WELCOMED_KEY = "onboarding-welcomed";
@@ -18,7 +18,6 @@ export function OnboardingWelcome() {
   const [open, setOpen] = useState(false);
   const [loadingDemo, setLoadingDemo] = useState(false);
   const [confirmDemoOpen, setConfirmDemoOpen] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (authLoading || studentsLoading) return;
@@ -67,11 +66,7 @@ export function OnboardingWelcome() {
 
   const handleDemo = async () => {
     if (students.length > 0) {
-      toast({
-        title: "Демо недоступно",
-        description: "У вас уже есть данные. Demo доступен только для новых аккаунтов.",
-        variant: "destructive",
-      });
+      toast.error("Демо недоступно", { description: "У вас уже есть данные. Demo доступен только для новых аккаунтов." });
       return;
     }
     setConfirmDemoOpen(true);
@@ -91,18 +86,15 @@ export function OnboardingWelcome() {
         const description = res.status === 400
           ? (body.error ?? "У вас уже есть данные. Demo доступен только для новых аккаунтов.")
           : "Не удалось загрузить demo. Попробуйте позже.";
-        toast({ title: "Демо недоступно", description, variant: "destructive" });
+        toast.error("Демо недоступно", { description });
         setLoadingDemo(false);
         return;
       }
       markWelcomed();
-      toast({
-        title: "✅ Demo-данные загружены!",
-        description: `Создано: ${body.created?.students} учеников, ${body.created?.lessons} занятий, ${body.created?.payments} платежей.`,
-      });
+      toast.success("✅ Demo-данные загружены!", { description: `Создано: ${body.created?.students} учеников, ${body.created?.lessons} занятий, ${body.created?.payments} платежей.` });
       setTimeout(() => window.location.reload(), 800);
     } catch {
-      toast({ title: "Ошибка", description: "Не удалось загрузить demo. Попробуйте позже.", variant: "destructive" });
+      toast.error("Ошибка", { description: "Не удалось загрузить demo. Попробуйте позже." });
       setLoadingDemo(false);
     }
   };

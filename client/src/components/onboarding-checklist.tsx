@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/lib/toast";
 import { fireCelebration } from "@/lib/confetti";
 import { cn } from "@/lib/utils";
 import type { Student, Lesson, Payment, Homework } from "@shared/schema";
@@ -48,7 +48,6 @@ function CircularProgress({ value, allDone }: { value: number; allDone: boolean 
 export function OnboardingChecklist() {
   const [dismissed, setDismissed] = useState(false);
   const [celebrated, setCelebrated] = useState(false);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -119,7 +118,7 @@ export function OnboardingChecklist() {
       fireCelebration();
       localStorage.setItem("checklist-celebrated", "1");
       setCelebrated(true);
-      toast({ title: "🏆 Все настройки завершены!", description: "Отличная работа!" });
+      toast.success("🏆 Все настройки завершены!", { description: "Отличная работа!"  });
     }
   }, [allDone, celebrated, toast]);
 

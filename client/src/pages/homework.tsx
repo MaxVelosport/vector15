@@ -47,7 +47,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateResource } from "@/lib/queryClient";
 import { useStudents, useHomework, useHomeworkTemplates, useCreateHomeworkTemplate, useDeleteHomeworkTemplate } from "@/hooks/use-tutor-data";

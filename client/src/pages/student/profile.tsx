@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/lib/toast";
 import { Mail, Lock, CheckCircle2, AlertTriangle, Send } from "lucide-react";
 
 type StudentMe = {
@@ -17,7 +17,6 @@ type StudentMe = {
 };
 
 export default function StudentProfilePage() {
-  const { toast } = useToast();
   const { data: me, isLoading } = useQuery<StudentMe>({
     queryKey: ["student-auth"],
     queryFn: async () => {
@@ -59,32 +58,32 @@ export default function StudentProfilePage() {
       if (!r.ok) throw new Error(d.error || "Ошибка");
       return d;
     },
-    onSuccess: () => toast({ title: "Письмо отправлено", description: "Проверьте почту — перейдите по ссылке." }),
-    onError: (e: any) => toast({ title: "Ошибка", description: e.message, variant: "destructive" }),
+    onSuccess: () => toast.success("Письмо отправлено", { description: "Проверьте почту — перейдите по ссылке."  }),
+    onError: (e: any) => toast.error("Ошибка", { description: e.message }),
   });
 
   const handleSaveEmail = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) { toast({ title: "Укажите email", variant: "destructive" }); return; }
+    if (!email.trim()) { toast.error("Укажите email"); return; }
     try {
       await updateProfile.mutateAsync({ email: email.trim().toLowerCase() });
-      toast({ title: "Email обновлён", description: "Подтвердите новый адрес." });
+      toast.success("Email обновлён", { description: "Подтвердите новый адрес."  });
       setEmail("");
     } catch (err: any) {
-      toast({ title: "Не удалось сохранить", description: err.message, variant: "destructive" });
+      toast.error("Не удалось сохранить", { description: err.message });
     }
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPass.length < 6) { toast({ title: "Пароль короче 6 символов", variant: "destructive" }); return; }
-    if (newPass !== confirmPass) { toast({ title: "Пароли не совпадают", variant: "destructive" }); return; }
+    if (newPass.length < 6) { toast.error("Пароль короче 6 символов"); return; }
+    if (newPass !== confirmPass) { toast.error("Пароли не совпадают"); return; }
     try {
       await updateProfile.mutateAsync({ currentPassword: curPass, newPassword: newPass });
-      toast({ title: "Пароль обновлён" });
+      toast.success("Пароль обновлён");
       setCurPass(""); setNewPass(""); setConfirmPass("");
     } catch (err: any) {
-      toast({ title: "Не удалось сменить пароль", description: err.message, variant: "destructive" });
+      toast.error("Не удалось сменить пароль", { description: err.message });
     }
   };
 

@@ -20,7 +20,7 @@ import {
   Award, FlaskConical, Globe, Calculator, Atom, Microscope, Landmark, BookMarked,
   Code, Users, ArrowRight, X, Save, Zap, Map, Dna, Laptop,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useStudents } from "@/hooks/use-tutor-data";

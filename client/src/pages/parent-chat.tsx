@@ -10,7 +10,7 @@ import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import { format, isToday, isYesterday } from "date-fns";
 import { ru } from "date-fns/locale";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 function formatMsgTime(dateStr: string) {
   const d = new Date(dateStr);

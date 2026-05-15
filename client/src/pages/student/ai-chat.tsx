@@ -34,7 +34,7 @@ import {
   Copy,
   Check,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/lib/toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -153,7 +153,6 @@ function StudentChatBubble({ msg }: { msg: ChatMessage }) {
 }
 
 export default function StudentAiChat({ studentSubject, activeHomeworkId, onClearHomework }: StudentAiChatProps) {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [chatInput, setChatInput] = useState("");
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
@@ -182,7 +181,7 @@ export default function StudentAiChat({ studentSubject, activeHomeworkId, onClea
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["student-ai-config"] });
       queryClient.invalidateQueries({ queryKey: ["/api/student/ai-packages/balance"] });
-      toast({ title: "Пакет ИИ приобретён!" });
+      toast.success("Пакет ИИ приобретён!");
       setShowAiPackageDialog(false);
       setSelectedPackageIdx(null);
     },
@@ -253,7 +252,7 @@ export default function StudentAiChat({ studentSubject, activeHomeworkId, onClea
     },
     onError: (error: Error) => {
       setIsCreatingChat(false);
-      toast({ title: "Ошибка", description: error.message, variant: "destructive" });
+      toast.error("Ошибка", { description: error.message });
     },
   });
 
@@ -295,7 +294,7 @@ export default function StudentAiChat({ studentSubject, activeHomeworkId, onClea
       queryClient.invalidateQueries({ queryKey: ["student-ai-config"] });
     },
     onError: (error: Error) => {
-      toast({ title: "Ошибка", description: error.message, variant: "destructive" });
+      toast.error("Ошибка", { description: error.message });
     },
   });
 
@@ -331,7 +330,7 @@ export default function StudentAiChat({ studentSubject, activeHomeworkId, onClea
 
   const processImageFile = (file: File) => {
     if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "Ошибка", description: "Максимальный размер изображения — 5 МБ", variant: "destructive" });
+      toast.error("Ошибка", { description: "Максимальный размер изображения — 5 МБ" });
       return;
     }
     const reader = new FileReader();

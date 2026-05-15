@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useStudents } from "@/hooks/use-tutor-data";
 
 import { useDocumentTitle } from "@/hooks/use-document-title";

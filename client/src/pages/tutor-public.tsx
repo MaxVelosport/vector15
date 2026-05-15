@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/lib/toast";
 import { GraduationCap, Phone, CircleDollarSign, BookOpen, Award, Clock, ExternalLink, Share2, Star, MessageSquarePlus, Send } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { SiVk, SiWhatsapp, SiInstagram, SiTelegram } from "react-icons/si";
@@ -127,7 +127,6 @@ export default function TutorPublic() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const { toast } = useToast();
 
   // Reviews
   const [reviews, setReviews] = useState<PublicReview[]>([]);
@@ -171,11 +170,11 @@ export default function TutorPublic() {
   const submitApplication = async () => {
     if (!params?.slug) return;
     if (applyName.trim().length < 2) {
-      toast({ title: "Укажите имя", variant: "destructive" });
+      toast.error("Укажите имя");
       return;
     }
     if (applyContact.trim().length < 3) {
-      toast({ title: "Укажите контакт для связи", description: "Телефон, email или @telegram", variant: "destructive" });
+      toast.error("Укажите контакт для связи", { description: "Телефон, email или @telegram" });
       return;
     }
     setApplying(true);
@@ -195,9 +194,9 @@ export default function TutorPublic() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Ошибка отправки");
       setApplyDone(true);
-      toast({ title: "Заявка отправлена!", description: "Репетитор скоро свяжется с вами." });
+      toast.success("Заявка отправлена!", { description: "Репетитор скоро свяжется с вами."  });
     } catch (e: any) {
-      toast({ title: "Не удалось отправить", description: e.message, variant: "destructive" });
+      toast.error("Не удалось отправить", { description: e.message });
     } finally {
       setApplying(false);
     }
@@ -212,11 +211,11 @@ export default function TutorPublic() {
   const submitReview = async () => {
     if (!params?.slug) return;
     if (authorName.trim().length < 2) {
-      toast({ title: "Укажите имя (минимум 2 символа)", variant: "destructive" });
+      toast.error("Укажите имя (минимум 2 символа)");
       return;
     }
     if (reviewText.trim().length < 10) {
-      toast({ title: "Отзыв слишком короткий", description: "Минимум 10 символов", variant: "destructive" });
+      toast.error("Отзыв слишком короткий", { description: "Минимум 10 символов" });
       return;
     }
     setSubmitting(true);
@@ -233,11 +232,11 @@ export default function TutorPublic() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Ошибка отправки");
-      toast({ title: "Спасибо!", description: json.message || "Отзыв появится после модерации." });
+      toast.success("Спасибо!", { description: json.message || "Отзыв появится после модерации."  });
       setShowForm(false);
       setAuthorName(""); setAuthorContact(""); setRating(5); setReviewText("");
     } catch (e: any) {
-      toast({ title: "Не удалось отправить", description: e.message, variant: "destructive" });
+      toast.error("Не удалось отправить", { description: e.message });
     } finally {
       setSubmitting(false);
     }

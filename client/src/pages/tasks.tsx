@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
   Search, Plus, Trash2, Eye, BookOpen, ChevronLeft, ChevronRight,
@@ -148,7 +148,6 @@ function SendHomeworkDialog({ open, onClose, variant, variantTaskIds, students }
   variant: Variant | null; variantTaskIds: string[];
   students: Student[];
 }) {
-  const { toast } = useToast();
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [deadline, setDeadline] = useState("");
   const [description, setDescription] = useState("");
@@ -167,7 +166,7 @@ function SendHomeworkDialog({ open, onClose, variant, variantTaskIds, students }
       hints: hints || undefined,
     }),
     onSuccess: (data: any) => {
-      toast({ title: `Домашка отправлена ${data.created} ученик${data.created === 1 ? 'у' : 'ам'}` });
+      toast.success(`Домашка отправлена ${data.created} ученик${data.created === 1 ? 'у' : 'ам'}`);
       invalidateResource("homework");
       onClose();
       setSelectedStudents([]);
@@ -175,7 +174,7 @@ function SendHomeworkDialog({ open, onClose, variant, variantTaskIds, students }
       setDescription("");
       setHints("");
     },
-    onError: (e: any) => toast({ title: "Ошибка", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast.error("Ошибка", { description: e.message }),
   });
 
   return (
@@ -611,7 +610,6 @@ function PreviewTaskCard({ task, index }: { task: Task; index: number }) {
 
 export default function TasksPage() {
   useDocumentTitle("Задачи");
-  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<"bank" | "variants">("bank");
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [topicClassFilter, setTopicClassFilter] = useState<string>("");
@@ -680,12 +678,12 @@ export default function TasksPage() {
     mutationFn: () => apiRequest("POST", "/api/variants", { name: variantName, taskIds: variantTaskIds }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/variants"] });
-      toast({ title: "Вариант сохранён" });
+      toast.success("Вариант сохранён");
       setVariantTaskIds([]);
       setVariantName("Вариант 1");
       setVariantTasksCache({});
     },
-    onError: (e: any) => toast({ title: "Ошибка", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast.error("Ошибка", { description: e.message }),
   });
 
   const updateMutation = useMutation({
@@ -693,26 +691,26 @@ export default function TasksPage() {
       apiRequest("PATCH", `/api/variants/${id}`, { name, taskIds }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/variants"] });
-      toast({ title: "Вариант обновлён" });
+      toast.success("Вариант обновлён");
       setVariantTaskIds([]);
       setVariantName("Вариант 1");
       setVariantTasksCache({});
       setEditingVariantId(null);
     },
-    onError: (e: any) => toast({ title: "Ошибка", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast.error("Ошибка", { description: e.message }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/variants/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/variants"] });
-      toast({ title: "Вариант удалён" });
+      toast.success("Вариант удалён");
     },
   });
 
   const addTaskToVariant = useCallback((task: Task) => {
     if (variantTaskIds.includes(task.id)) {
-      toast({ title: "Уже в варианте" });
+      toast.success("Уже в варианте");
       return;
     }
     setVariantTaskIds(prev => [...prev, task.id]);
@@ -724,7 +722,7 @@ export default function TasksPage() {
   }, []);
 
   const saveVariant = () => {
-    if (variantTaskIds.length === 0) { toast({ title: "Добавьте хотя бы одно задание" }); return; }
+    if (variantTaskIds.length === 0) { toast.success("Добавьте хотя бы одно задание"); return; }
     if (editingVariantId) {
       updateMutation.mutate({ id: editingVariantId, name: variantName, taskIds: variantTaskIds });
     } else {
@@ -743,9 +741,9 @@ export default function TasksPage() {
       if (!res.ok) throw new Error("Не найдено");
       const task: Task = await res.json();
       addTaskToVariant(task);
-      toast({ title: `Добавлено: ${task.topic}`, description: task.class });
+      toast.success(`Добавлено: ${task.topic}`, { description: task.class });
     } catch {
-      toast({ title: "Не удалось добавить случайное задание", variant: "destructive" });
+      toast.error("Не удалось добавить случайное задание");
     } finally {
       setLoadingRandomTopic(null);
     }
@@ -754,7 +752,7 @@ export default function TasksPage() {
   const buildVariant = async () => {
     const validGroups = builderGroups.filter(g => g.topic);
     if (validGroups.length === 0) {
-      toast({ title: "Выберите хотя бы одну тему", variant: "destructive" });
+      toast.error("Выберите хотя бы одну тему");
       return;
     }
     setIsBuilding(true);
@@ -775,7 +773,7 @@ export default function TasksPage() {
       if (!res.ok) throw new Error(await res.text());
       const tasks: Task[] = await res.json();
       if (tasks.length === 0) {
-        toast({ title: "Нет подходящих заданий по выбранным фильтрам", variant: "destructive" });
+        toast.error("Нет подходящих заданий по выбранным фильтрам");
         return;
       }
       const newIds = tasks.map(t => t.id).filter(id => !variantTaskIds.includes(id));
@@ -784,12 +782,11 @@ export default function TasksPage() {
       setVariantTasksCache(prev => ({ ...prev, ...newCache }));
       const total = validGroups.reduce((s, g) => s + g.count, 0);
       const skipped = total - tasks.length;
-      toast({
-        title: `Добавлено ${tasks.length} задани${tasks.length === 1 ? "е" : tasks.length < 5 ? "я" : "й"}`,
+      toast.success(`Добавлено ${tasks.length} задани${tasks.length === 1 ? "е" : tasks.length < 5 ? "я" : "й"}`, {
         description: skipped > 0 ? `${skipped} не найдено (возможно дубли или нет в базе)` : undefined,
       });
     } catch (e: any) {
-      toast({ title: "Ошибка при составлении варианта", description: e.message, variant: "destructive" });
+      toast.error("Ошибка при составлении варианта", { description: e.message });
     } finally {
       setIsBuilding(false);
     }
@@ -818,7 +815,7 @@ export default function TasksPage() {
     setVariantTaskIds(v.taskIds || []);
     setActiveTab("bank");
     setSelectedTopic(null);
-    toast({ title: "Вариант загружен для редактирования", description: "Внесите изменения и сохраните" });
+    toast.success("Вариант загружен для редактирования", { description: "Внесите изменения и сохраните"  });
   };
 
   const tasks = tasksData?.tasks || [];

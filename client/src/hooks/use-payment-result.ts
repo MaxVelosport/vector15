@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 type PaymentParam = "purchase" | "payment";
 type PaymentValue = "success" | "fail" | "cancel";

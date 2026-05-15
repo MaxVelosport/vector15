@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/lib/toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
   Mic, Upload, RefreshCw, Trash2, Loader2, FileAudio, Sparkles,
@@ -57,7 +57,6 @@ export default function RecordingsPage() {
 }
 
 function RecordingsList() {
-  const { toast } = useToast();
   const [uploadOpen, setUploadOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
@@ -75,16 +74,16 @@ function RecordingsList() {
     mutationFn: () => apiRequest("POST", "/api/recordings/sync-bbb"),
     onSuccess: async (r: any) => {
       const d = await r.json();
-      toast({ title: "Синхронизировано", description: `Новых записей: ${d.added}` });
+      toast.success("Синхронизировано", { description: `Новых записей: ${d.added}` });
       queryClient.invalidateQueries({ queryKey: ["/api/recordings"] });
     },
-    onError: (e: any) => toast({ title: "Ошибка", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast.error("Ошибка", { description: e.message }),
   });
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/recordings/${id}`),
     onSuccess: () => {
-      toast({ title: "Удалено" });
+      toast.success("Удалено");
       queryClient.invalidateQueries({ queryKey: ["/api/recordings"] });
     },
   });
@@ -92,7 +91,7 @@ function RecordingsList() {
   const retryMut = useMutation({
     mutationFn: (id: string) => apiRequest("POST", `/api/recordings/${id}/retry`),
     onSuccess: () => {
-      toast({ title: "Перезапущено" });
+      toast.success("Перезапущено");
       queryClient.invalidateQueries({ queryKey: ["/api/recordings"] });
     },
   });
@@ -220,12 +219,11 @@ function RecordingsList() {
 
 function UploadForRecordingButton({ recordingId }: { recordingId: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const { toast } = useToast();
   const [busy, setBusy] = useState(false);
 
   const onFile = async (f: File) => {
     if (f.size > 25 * 1024 * 1024) {
-      toast({ title: "Файл слишком большой", description: "Максимум 25 МБ. Сожмите аудио в mp3 64–96 kbps.", variant: "destructive" });
+      toast.error("Файл слишком большой", { description: "Максимум 25 МБ. Сожмите аудио в mp3 64–96 kbps." });
       return;
     }
     const fd = new FormData();
@@ -235,10 +233,10 @@ function UploadForRecordingButton({ recordingId }: { recordingId: string }) {
     try {
       const res = await fetch("/api/recordings/upload", { method: "POST", body: fd, credentials: "include" });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Ошибка загрузки");
-      toast({ title: "Расшифровка запущена" });
+      toast.success("Расшифровка запущена");
       queryClient.invalidateQueries({ queryKey: ["/api/recordings"] });
     } catch (e: any) {
-      toast({ title: "Ошибка", description: e.message, variant: "destructive" });
+      toast.error("Ошибка", { description: e.message });
     } finally { setBusy(false); }
   };
 
@@ -254,16 +252,15 @@ function UploadForRecordingButton({ recordingId }: { recordingId: string }) {
 }
 
 function UploadDialog({ open, onOpenChange, students }: { open: boolean; onOpenChange: (v: boolean) => void; students: Student[] }) {
-  const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [studentId, setStudentId] = useState<string>("");
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
-    if (!file) return toast({ title: "Выберите аудиофайл", variant: "destructive" });
-    if (!title.trim()) return toast({ title: "Укажите название", variant: "destructive" });
-    if (file.size > 25 * 1024 * 1024) return toast({ title: "Файл слишком большой", description: "Максимум 25 МБ.", variant: "destructive" });
+    if (!file) return toast.error("Выберите аудиофайл");
+    if (!title.trim()) return toast.error("Укажите название");
+    if (file.size > 25 * 1024 * 1024) return toast.error("Файл слишком большой", { description: "Максимум 25 МБ." });
     setBusy(true);
     try {
       const fd = new FormData();
@@ -272,12 +269,12 @@ function UploadDialog({ open, onOpenChange, students }: { open: boolean; onOpenC
       if (studentId) fd.append("studentId", studentId);
       const res = await fetch("/api/recordings/upload", { method: "POST", body: fd, credentials: "include" });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Ошибка");
-      toast({ title: "Запущена расшифровка", description: "Это занимает 1–3 минуты — обновится автоматически." });
+      toast.success("Запущена расшифровка", { description: "Это занимает 1–3 минуты — обновится автоматически."  });
       queryClient.invalidateQueries({ queryKey: ["/api/recordings"] });
       onOpenChange(false);
       setTitle(""); setStudentId(""); setFile(null);
     } catch (e: any) {
-      toast({ title: "Ошибка", description: e.message, variant: "destructive" });
+      toast.error("Ошибка", { description: e.message });
     } finally { setBusy(false); }
   };
 

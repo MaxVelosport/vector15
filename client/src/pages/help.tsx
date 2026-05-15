@@ -19,7 +19,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { useDocumentTitle } from "@/hooks/use-document-title";
 const QUICK_STEPS = [

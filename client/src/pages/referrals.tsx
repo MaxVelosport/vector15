@@ -5,7 +5,7 @@ import { DashboardLayout } from "@/components/dashboard-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/lib/toast";
 
 import { useDocumentTitle } from "@/hooks/use-document-title";
 interface ReferralsData {
@@ -38,10 +38,10 @@ export default function ReferralsPage() {
     try {
       await navigator.clipboard.writeText(shareLink);
       setCopied(true);
-      toast({ title: "Ссылка скопирована" });
+      toast.success("Ссылка скопирована");
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast({ title: "Не удалось скопировать", variant: "destructive" });
+      toast.error("Не удалось скопировать");
     }
   };
 

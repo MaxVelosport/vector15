@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Mic, Square, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -44,7 +44,6 @@ export function VoiceInputButton({
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -83,11 +82,7 @@ export function VoiceInputButton({
 
   async function startRecording() {
     if (!supported) {
-      toast({
-        title: "Голосовой ввод недоступен",
-        description: "Ваш браузер не поддерживает запись звука. Используйте Chrome, Safari или Firefox.",
-        variant: "destructive",
-      });
+      toast.error("Голосовой ввод недоступен", { description: "Ваш браузер не поддерживает запись звука. Используйте Chrome, Safari или Firefox." });
       return;
     }
     try {
@@ -107,7 +102,7 @@ export function VoiceInputButton({
       const msg = e?.name === "NotAllowedError"
         ? "Разрешите доступ к микрофону в настройках браузера."
         : (e?.message || "Не удалось получить доступ к микрофону.");
-      toast({ title: "Микрофон недоступен", description: msg, variant: "destructive" });
+      toast.error("Микрофон недоступен", { description: msg });
     }
   }
 
@@ -139,10 +134,7 @@ export function VoiceInputButton({
     // Reject very short clicks (< 0.3s of webm = ~3KB of opus)
     if (blob.size < 1500) {
       setState("idle");
-      toast({
-        title: "Запись слишком короткая",
-        description: "Зажмите кнопку и говорите хотя бы секунду.",
-      });
+      toast.info("Запись слишком короткая", { description: "Зажмите кнопку и говорите хотя бы секунду." });
       return;
     }
 
@@ -166,16 +158,12 @@ export function VoiceInputButton({
       const { text } = await r.json();
       const t = (text || "").trim();
       if (!t) {
-        toast({ title: "Не удалось распознать", description: "Попробуйте говорить громче и чётче." });
+        toast.success("Не удалось распознать", { description: "Попробуйте говорить громче и чётче."  });
       } else {
         onTranscript(t);
       }
     } catch (e: any) {
-      toast({
-        title: "Ошибка распознавания",
-        description: e?.message || "Попробуйте ещё раз.",
-        variant: "destructive",
-      });
+      toast.error("Ошибка распознавания", { description: e?.message || "Попробуйте ещё раз." });
     } finally {
       setState("idle");
     }

@@ -2,7 +2,7 @@ import { lazy, Suspense } from "react";
 import { Switch, Route, Redirect } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "sonner";
 import { queryClient } from "./lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/hooks/use-theme";
@@ -172,7 +172,7 @@ export default function App() {
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
-            <Toaster />
+            <Toaster richColors position="bottom-right" duration={3000} />
             <ErrorBoundary variant="page">
               <Router />
             </ErrorBoundary>

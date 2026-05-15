@@ -5,7 +5,7 @@ import { useLocation } from "wouter";
 import { Wifi, WifiOff, Loader2, ArrowLeft, Download, ImagePlus, HelpCircle, X, Keyboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 type SyncStatus = "connecting" | "connected" | "disconnected";
 

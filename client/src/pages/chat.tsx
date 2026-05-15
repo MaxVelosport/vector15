@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { Search, Send, MessageCircle, Loader2, Paperclip, X, Trash2, FileText, Mail, Megaphone, Users, ChevronLeft } from "lucide-react";
 import { format, isToday, isYesterday } from "date-fns";
 import { ru } from "date-fns/locale";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 import { useDocumentTitle } from "@/hooks/use-document-title";
 function formatMsgTime(dateStr: string) {

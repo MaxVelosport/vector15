@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Receipt, Copy, Check, ExternalLink, Printer, AlertCircle, Smartphone } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/lib/toast";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import type { Payment, Student } from "@shared/schema";
@@ -69,7 +69,6 @@ export function SamozanyatyReceiptDialog({ open, onOpenChange, payment, student,
   const [receiptNumber, setReceiptNumber] = useState("");
   const [markedIssued, setMarkedIssued] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (!payment || !student) return;
@@ -93,9 +92,9 @@ export function SamozanyatyReceiptDialog({ open, onOpenChange, payment, student,
       await navigator.clipboard.writeText(text);
       setCopiedField(field);
       setTimeout(() => setCopiedField(null), 1500);
-      toast({ title: "Скопировано", description: text.slice(0, 60) });
+      toast.success("Скопировано", { description: text.slice(0, 60) });
     } catch {
-      toast({ title: "Не удалось скопировать", variant: "destructive" });
+      toast.error("Не удалось скопировать");
     }
   };
 
@@ -115,17 +114,17 @@ ${payerType === "legal" && payerInn ? `ИНН плательщика: ${payerInn
       ? saveReceiptRecord(payment.id, { issuedAt: new Date().toISOString(), receiptNumber: receiptNumber.trim() || undefined })
       : saveReceiptRecord(payment.id, null);
     if (!ok) {
-      toast({ title: "Не удалось сохранить статус", description: "Хранилище браузера недоступно (приватный режим?)", variant: "destructive" });
+      toast.error("Не удалось сохранить статус", { description: "Хранилище браузера недоступно (приватный режим?)" });
       return;
     }
     setMarkedIssued(checked);
-    if (checked) toast({ title: "Чек отмечен как выданный", description: "Запись сохранена в вашем кабинете" });
+    if (checked) toast.success("Чек отмечен как выданный", { description: "Запись сохранена в вашем кабинете"  });
   };
 
   const handlePrint = () => {
     const w = window.open("", "_blank", "width=600,height=800");
     if (!w) {
-      toast({ title: "Разрешите всплывающие окна", description: "Браузер заблокировал окно печати", variant: "destructive" });
+      toast.error("Разрешите всплывающие окна", { description: "Браузер заблокировал окно печати" });
       return;
     }
     const tutorLine = tutor?.name

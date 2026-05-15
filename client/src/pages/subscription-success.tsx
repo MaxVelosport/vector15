@@ -4,7 +4,7 @@ import { CheckCircle, Clock, AlertCircle, Loader2, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useDocumentTitle } from "@/hooks/use-document-title";
 
 type PageState = "checking" | "polling" | "success" | "timeout" | "unauthenticated";

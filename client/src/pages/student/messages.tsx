@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { VoiceInputButton } from "@/components/voice-input-button";
 import { Loader2, Send, MessageCircle, Paperclip, X, Trash2, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 
 interface Message {
   id: string;

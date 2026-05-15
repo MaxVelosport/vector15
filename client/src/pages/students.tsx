@@ -63,7 +63,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { parseConferenceLink, generateRoomName, makeInternalLink } from "@/lib/conference-utils";
 import { SiZoom, SiGooglemeet, SiJitsi } from "react-icons/si";

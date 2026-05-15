@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/lib/toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Sparkles, Plus, Trash2, Eye, Users, Loader2, BarChart3, BookOpen } from "lucide-react";
 import type { Quiz, QuizAttempt, Student } from "@shared/schema";
@@ -21,7 +21,6 @@ type QQ = { q: string; options: string[]; correct: number; explanation?: string 
 
 export default function QuizzesPage() {
   useDocumentTitle("Тренажёры");
-  const { toast } = useToast();
   const [createOpen, setCreateOpen] = useState(false);
   const [viewQuiz, setViewQuiz] = useState<Quiz | null>(null);
 
@@ -35,7 +34,7 @@ export default function QuizzesPage() {
     mutationFn: (id: string) => apiRequest("DELETE", `/api/quizzes/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
-      toast({ title: "Удалено" });
+      toast.success("Удалено");
     },
   });
 
@@ -146,7 +145,6 @@ export default function QuizzesPage() {
 }
 
 function CreateQuizDialog({ open, onOpenChange, students }: { open: boolean; onOpenChange: (v: boolean) => void; students: Student[] }) {
-  const { toast } = useToast();
   const [topic, setTopic] = useState("");
   const [description, setDescription] = useState("");
   const [studentId, setStudentId] = useState<string>("__all__");
@@ -161,7 +159,7 @@ function CreateQuizDialog({ open, onOpenChange, students }: { open: boolean; onO
   };
 
   const generate = async () => {
-    if (!topic.trim()) { toast({ title: "Укажите тему", variant: "destructive" }); return; }
+    if (!topic.trim()) { toast.error("Укажите тему"); return; }
     setGenerating(true);
     try {
       const r = await apiRequest("POST", "/api/quizzes/generate", { topic, count, difficulty });
@@ -169,7 +167,7 @@ function CreateQuizDialog({ open, onOpenChange, students }: { open: boolean; onO
       if (j.questions) setQuestions(j.questions);
       else throw new Error(j.error || "Ошибка");
     } catch (e: any) {
-      toast({ title: "Не удалось сгенерировать", description: e.message, variant: "destructive" });
+      toast.error("Не удалось сгенерировать", { description: e.message });
     } finally { setGenerating(false); }
   };
 
@@ -189,10 +187,10 @@ function CreateQuizDialog({ open, onOpenChange, students }: { open: boolean; onO
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
-      toast({ title: "Тренажёр создан" });
+      toast.success("Тренажёр создан");
       reset(); onOpenChange(false);
     },
-    onError: (e: any) => toast({ title: "Ошибка", description: e.message, variant: "destructive" }),
+    onError: (e: any) => toast.error("Ошибка", { description: e.message }),
   });
 
   return (

@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/lib/toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Check, X, UserPlus, Mail, Phone, MessageSquare, Inbox, ArrowRight, ArrowLeft, Calendar } from "lucide-react";
 
@@ -64,7 +64,6 @@ function formatDate(iso: string) {
 
 export default function ApplicationsPage() {
   useDocumentTitle("Заявки");
-  const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [rejectTarget, setRejectTarget] = useState<Application | null>(null);
   const [view, setView] = useState<"list" | "kanban">("list");
@@ -85,13 +84,10 @@ export default function ApplicationsPage() {
     onSuccess: (data) => {
       invalidate();
       invalidateResource("students");
-      toast({
-        title: "Ученик добавлен!",
-        description: `${data.student?.name || "Новый ученик"} появился в списке учеников.`,
-      });
+      toast.success("Ученик добавлен!", { description: `${data.student?.name || "Новый ученик"} появился в списке учеников.` });
     },
     onError: (err: any) => {
-      toast({ title: "Не удалось принять", description: err.message, variant: "destructive" });
+      toast.error("Не удалось принять", { description: err.message });
     },
   });
 
@@ -100,8 +96,8 @@ export default function ApplicationsPage() {
       const res = await apiRequest("POST", `/api/applications/${id}/reject`);
       return res.json();
     },
-    onSuccess: () => { invalidate(); toast({ title: "Заявка отклонена" }); },
-    onError: (err: any) => { toast({ title: "Ошибка", description: err.message, variant: "destructive" }); },
+    onSuccess: () => { invalidate(); toast.success("Заявка отклонена"); },
+    onError: (err: any) => { toast.error("Ошибка", { description: err.message }); },
   });
 
   const moveMutation = useMutation({
@@ -110,7 +106,7 @@ export default function ApplicationsPage() {
       return res.json();
     },
     onSuccess: () => invalidate(),
-    onError: (err: any) => { toast({ title: "Не удалось переместить", description: err.message, variant: "destructive" }); },
+    onError: (err: any) => { toast.error("Не удалось переместить", { description: err.message }); },
   });
 
   const pending = apps.filter(a => a.status === "pending");

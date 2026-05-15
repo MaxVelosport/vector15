@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Upload, FileSpreadsheet, CheckCircle2, XCircle, Trash2, Download, Loader2 } from "lucide-react";
 import { useCreateStudent } from "@/hooks/use-tutor-data";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/lib/toast";
 
 type ImportRow = {
   name: string;
@@ -100,7 +100,6 @@ export function StudentsImportDialog({ open, onOpenChange, onImported }: Props) 
   const [errCount, setErrCount] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
   const createStudent = useCreateStudent();
-  const { toast } = useToast();
 
   const reset = () => {
     setStep("upload"); setRows([]); setFileName(""); setParseError(null);
@@ -180,7 +179,7 @@ export function StudentsImportDialog({ open, onOpenChange, onImported }: Props) 
     }
     setStep("done");
     if (ok > 0) {
-      toast({ title: `Импортировано: ${ok}`, description: err > 0 ? `Ошибок: ${err}` : "Все ученики добавлены" });
+      toast.success(`Импортировано: ${ok}`, { description: err > 0 ? `Ошибок: ${err}` : "Все ученики добавлены" });
       onImported?.(ok);
     }
   };

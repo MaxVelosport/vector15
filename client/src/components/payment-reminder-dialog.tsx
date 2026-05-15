@@ -11,7 +11,7 @@ import {
   ChevronLeft, ChevronRight, AlertCircle, Info, Plus,
 } from "lucide-react";
 import { SiWhatsapp, SiTelegram } from "react-icons/si";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/lib/toast";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -309,7 +309,6 @@ export type PaymentReminderDialogProps = {
 export function PaymentReminderDialog({
   open, onOpenChange, students, startIndex = 0, tutorName,
 }: PaymentReminderDialogProps) {
-  const { toast } = useToast();
   const [index, setIndex] = useState(startIndex);
   const [templateId, setTemplateId] = useState<string>(() => {
     try { return localStorage.getItem(LAST_TEMPLATE_KEY) || "reminder_soft"; }
@@ -374,9 +373,9 @@ export function PaymentReminderDialog({
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
       recordSent(s.id, selectedTemplate.title, channelLabel);
-      toast({ title: "Скопировано", description: "Текст сообщения в буфере обмена." });
+      toast.success("Скопировано", { description: "Текст сообщения в буфере обмена."  });
     } catch {
-      toast({ title: "Не удалось скопировать", variant: "destructive" });
+      toast.error("Не удалось скопировать");
     }
   };
 
@@ -389,14 +388,14 @@ export function PaymentReminderDialog({
     window.open(url, "_blank", "noopener,noreferrer");
     recordSent(s.id, selectedTemplate.title, channelLabel);
     if (alsoCopy) {
-      toast({ title: `Открываю ${channelLabel}`, description: "Текст сообщения скопирован — вставьте в чат." });
+      toast.info(`Открываю ${channelLabel}`, { description: "Текст сообщения скопирован — вставьте в чат." });
     }
   };
 
   const handleSaveTemplate = () => {
     const name = saveName.trim();
     if (!name) {
-      toast({ title: "Укажите название шаблона", variant: "destructive" });
+      toast.error("Укажите название шаблона");
       return;
     }
     const id = `custom_${Date.now()}`;
@@ -410,7 +409,7 @@ export function PaymentReminderDialog({
     setTemplateId(id);
     setSaveMode(false);
     setSaveName("");
-    toast({ title: "Шаблон сохранён", description: `«${name}» теперь в вашем списке.` });
+    toast.success("Шаблон сохранён", { description: `«${name}» теперь в вашем списке.` });
   };
 
   const handleDeleteTemplate = (id: string) => {
@@ -418,7 +417,7 @@ export function PaymentReminderDialog({
     saveCustomTemplates(next);
     setCustoms(next);
     if (templateId === id) setTemplateId("reminder_soft");
-    toast({ title: "Шаблон удалён" });
+    toast.success("Шаблон удалён");
   };
 
   const hasAnyChannel = waHref || tgHref || mailHref || smsHref;

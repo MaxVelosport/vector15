@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Plus, Clock, Target, BookOpen, Trash2, Edit, Copy, Globe } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { invalidateResource } from "@/lib/queryClient";
 
 import { Button } from "@/components/ui/button";

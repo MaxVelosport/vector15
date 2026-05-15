@@ -57,7 +57,7 @@ import {
   PlayCircle,
   FileVideo,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";

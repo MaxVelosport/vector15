@@ -45,7 +45,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { toast } from "sonner";
+import { toast } from "@/lib/toast";
 import { useAuth } from "@/hooks/use-auth";
 import { useStudents, useLessons, useUpdateLesson, useDeleteLesson, usePayments } from "@/hooks/use-tutor-data";
 import { useQuery, useQueryClient } from "@tanstack/react-query";

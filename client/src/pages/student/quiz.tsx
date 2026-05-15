@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/lib/toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { BookOpen, CheckCircle2, XCircle, Loader2, ArrowRight, RotateCcw, Trophy } from "lucide-react";
 
@@ -18,7 +18,6 @@ export default function StudentQuiz() {
   const [answers, setAnswers] = useState<number[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ score: number; total: number; review: ReviewItem[] } | null>(null);
-  const { toast } = useToast();
 
   const { data: quizzes = [], isLoading } = useQuery<QuizListItem[]>({ queryKey: ["/api/student/quizzes"] });
   const { data: history = [] } = useQuery<Attempt[]>({ queryKey: ["/api/student/quiz-attempts"] });
@@ -31,7 +30,7 @@ export default function StudentQuiz() {
       setStep(0);
       setAnswers(new Array(quiz.questions.length).fill(-1));
       setResult(null);
-    } catch (e: any) { toast({ title: "Не удалось загрузить", description: e.message, variant: "destructive" }); }
+    } catch (e: any) { toast.error("Не удалось загрузить", { description: e.message }); }
   };
 
   const choose = (oi: number) => setAnswers(a => a.map((v, i) => i === step ? oi : v));
@@ -44,7 +43,7 @@ export default function StudentQuiz() {
       const j = await r.json();
       setResult({ score: j.score, total: j.total, review: j.review });
       queryClient.invalidateQueries({ queryKey: ["/api/student/quiz-attempts"] });
-    } catch (e: any) { toast({ title: "Ошибка", description: e.message, variant: "destructive" }); }
+    } catch (e: any) { toast.error("Ошибка", { description: e.message }); }
     finally { setSubmitting(false); }
   };
 
