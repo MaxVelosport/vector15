@@ -1276,21 +1276,13 @@ export async function registerRoutes(
   });
 
   // GET /api/admin/ai-settings - Получить настройки ИИ (админ)
-  app.get("/api/admin/ai-settings", requireAuth, async (req, res) => {
-    const currentTutor = await storage.getTutor(req.session.tutorId!);
-    if (!currentTutor?.isAdmin) {
-      return res.status(403).json({ error: "Forbidden" });
-    }
+  app.get("/api/admin/ai-settings", requireAdmin, async (_req, res) => {
     const settings = await storage.getAiSettings();
     res.json(settings);
   });
 
   // PUT /api/admin/ai-settings - Обновить настройки ИИ (админ)
-  app.put("/api/admin/ai-settings", requireAuth, async (req, res) => {
-    const currentTutor = await storage.getTutor(req.session.tutorId!);
-    if (!currentTutor?.isAdmin) {
-      return res.status(403).json({ error: "Forbidden" });
-    }
+  app.put("/api/admin/ai-settings", requireAdmin, async (req, res) => {
     const settingsSchema = z.object({
       openai_api_key: z.string().optional(),
       deepseek_api_key: z.string().optional(),
@@ -6454,7 +6446,10 @@ ${tutor.name}`;
   });
 
   // POST /api/tasks/build-variant - pick N random tasks per group
-  app.post("/api/tasks/build-variant", async (req, res) => {
+  app.post("/api/tasks/build-variant", async (req: any, res) => {
+    if (!req.session?.tutorId && !req.session?.studentId) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
     try {
       const { groups, excludeIds = [] } = req.body;
       if (!Array.isArray(groups) || groups.length === 0) {

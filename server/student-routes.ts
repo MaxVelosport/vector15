@@ -10,7 +10,7 @@ import { botManager } from "./telegram-bot";
 import YooKassa from "yookassa";
 import { generateBoardWsToken } from "./board-ws";
 import nodemailer from "nodemailer";
-import { publicLimiter } from "./rate-limit";
+import { publicLimiter, authLimiter } from "./rate-limit";
 import { createHmac } from "crypto";
 import { BUILTIN_TELEGRAM_TOKEN } from "./builtin-config";
 
@@ -182,11 +182,11 @@ export function registerStudentRoutes(app: Express) {
   });
 
   // GET /api/student/auth/token/:token - Авторизация по токену (ссылке)
-  app.get("/api/student/auth/token/:token", async (req, res) => {
+  app.get("/api/student/auth/token/:token", authLimiter, async (req, res) => {
     try {
       const { token } = req.params;
       
-      const accessToken = await storage.getStudentAccessToken(token);
+      const accessToken = await storage.getStudentAccessToken(String(token));
       if (!accessToken) {
         return res.status(401).json({ error: "Недействительная ссылка" });
       }

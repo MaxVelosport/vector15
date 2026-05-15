@@ -1,5 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { logger } from "./logger";
+import { requireAdmin } from "./auth";
 
 interface CapturedError {
   id: string;
@@ -55,8 +56,7 @@ export function installErrorMonitor(app: Express) {
   });
 
   // Эндпоинт для админа: посмотреть последние ошибки
-  app.get("/api/admin/errors", (req: any, res) => {
-    if (!req.session?.tutorId) return res.status(401).json({ error: "Unauthorized" });
+  app.get("/api/admin/errors", requireAdmin, (_req, res) => {
     res.json({
       total: buffer.length,
       errors: buffer.slice(0, 50),
