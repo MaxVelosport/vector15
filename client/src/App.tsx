@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Switch, Route, Redirect } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -28,7 +29,7 @@ import HomeworkPage from "./pages/homework";
 import QuizzesPage from "./pages/quizzes";
 import RecordingsPage from "./pages/recordings";
 import StudentPortal from "./pages/student-portal";
-import BoardPage from "./pages/board";
+const BoardPage = lazy(() => import("./pages/board"));
 import ConferencePage from "./pages/conference";
 import BbbPage from "./pages/bbb";
 import BoardsPage from "./pages/boards";
@@ -69,9 +70,11 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
 
   return (
     <ErrorBoundary variant="page">
-      <PageTransition>
-        <Component />
-      </PageTransition>
+      <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="text-sm text-muted-foreground">Загрузка...</div></div>}>
+        <PageTransition>
+          <Component />
+        </PageTransition>
+      </Suspense>
     </ErrorBoundary>
   );
 }

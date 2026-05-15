@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { useLocation, Switch, Route } from "wouter";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,7 +12,7 @@ import StudentHomework from "./student/homework";
 import StudentQuiz from "./student/quiz";
 import StudentFinance from "./student/finance";
 import StudentAiChat from "./student/ai-chat";
-import StudentBoard from "./student/board";
+const StudentBoard = lazy(() => import("./student/board"));
 import StudentNotes from "./student/notes";
 import StudentMessages from "./student/messages";
 import StudentConference from "./student/conference";
@@ -236,9 +236,11 @@ export default function StudentPortal() {
 
   if (location === "/student/board") {
     return (
-      <div className="fixed inset-0 flex flex-col">
-        <StudentBoard studentId={student.id} studentName={student.name} />
-      </div>
+      <Suspense fallback={<div className="flex min-h-screen items-center justify-center"><div className="text-sm text-muted-foreground">Загрузка...</div></div>}>
+        <div className="fixed inset-0 flex flex-col">
+          <StudentBoard studentId={student.id} studentName={student.name} />
+        </div>
+      </Suspense>
     );
   }
 
